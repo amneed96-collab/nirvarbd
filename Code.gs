@@ -7,8 +7,12 @@ var SHEET_SCHEMAS = {
   'Products': ['id','name','category','desc','price','discount','stock','image','status'],
   'Orders':   ['orderId','timestamp','customerName','phone','productName','category','deliveryArea','address','quantity','unitPrice','subtotal','deliveryCharge','total','status'],
   'Expenses': ['expenseId','timestamp','category','description','amount'],
-  'About':    ['key','value','updatedAt']
+  'About':    ['key','value','updatedAt'],
+  'Settings': ['key','value','updatedAt']
 };
+
+var DEFAULT_SETTINGS = { deliveryInside: 60, deliveryOutside: 150 };
+var PRODUCTS_CACHE_KEY = 'products_v1';
 
 /* ======== SHEET AUTO-SETUP ======== */
 
@@ -98,9 +102,10 @@ function buildRow(headers, map) {
 /* ======== HTTP HANDLERS ======== */
 
 function doGet(e) {
-  ensureAllSheets();
+  // প্রতিটি হ্যান্ডলার নিজেই ensureSheet() কল করে — তাই এখানে সব শীট চেক করা হয় না (দ্রুত রেসপন্সের জন্য)
   var action = e.parameter.action;
   if (action === 'products') return jsonResponse(getProducts());
+  if (action === 'settings') return jsonResponse({ settings: getSettings() });
   if (action === 'orders')   return jsonResponse(getOrders(e.parameter.status));
   if (action === 'expenses') return jsonResponse(getExpenses());
   if (action === 'about')    return jsonResponse(getAbout());
@@ -108,7 +113,6 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  ensureAllSheets();
   var body;
   try { body = JSON.parse(e.postData.contents); }
   catch (err) { return jsonResponse({ error: 'Invalid JSON' }); }
@@ -119,16 +123,27 @@ function doPost(e) {
     case 'updateProduct':     return jsonResponse(updateProduct(body.product));
     case 'addExpense':        return jsonResponse(addExpense(body.expense));
     case 'saveAbout':         return jsonResponse(saveAbout(body.about));
+    case 'saveSettings':      return jsonResponse(saveSettings(body.settings));
     default:                  return jsonResponse({ error: 'Unknown action' });
   }
 }
 
 /* ======== PRODUCTS ======== */
 
+function clearProductsCache() {
+  try { CacheService.getScriptCache().remove(PRODUCTS_CACHE_KEY); } catch (e) {}
+}
+
 function getProducts() {
+  // ক্যাশ থাকলে শীট না পড়েই সাথে সাথে রিটার্ন (৫ মিনিট; পণ্য যোগ/এডিট করলে ক্যাশ মুছে যায়)
+  try {
+    var cached = CacheService.getScriptCache().get(PRODUCTS_CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+
   var sheet = ensureSheet('Products');
   var rows  = sheet.getDataRange().getValues();
-  return {
+  var result = {
     products: rowsToObjects(rows).map(function(o){
       return {
         id:       String(o.id),
@@ -143,6 +158,8 @@ function getProducts() {
       };
     })
   };
+  try { CacheService.getScriptCache().put(PRODUCTS_CACHE_KEY, JSON.stringify(result), 300); } catch (e) {}
+  return result;
 }
 
 function addProduct(p) {
@@ -161,6 +178,7 @@ function addProduct(p) {
     'image':    p.image    || '',
     'status':   'Active'
   }));
+  clearProductsCache();
   return { success:true, id:id };
 }
 
@@ -186,6 +204,7 @@ function updateProduct(p) {
     if (p.stock    !== undefined) set('stock',    p.stock==='' ? '' : Number(p.stock));
     set('image',  p.image);
     set('status', p.status);
+    clearProductsCache();
     return { success:true };
   }
   return { error: 'পণ্য পাওয়া যায়নি' };
@@ -231,9 +250,11 @@ function saveOrder(order) {
   var qty     = Number(order.quantity)       || 1;
   var unit    = Number(order.unitPrice)      || 0;
   var sub     = Number(order.subtotal)       || (unit * qty);
-  var dc      = Number(order.deliveryCharge) || 0;
-  var total   = Number(order.total)          || (sub + dc);
   var area    = order.deliveryArea           || 'Inside Feni';
+  // ডেলিভারি চার্জ সবসময় Settings শীট থেকে (ক্লায়েন্টের পাঠানো মান বিশ্বাস করা হয় না)
+  var st      = getSettings();
+  var dc      = (area === 'Outside Feni') ? st.deliveryOutside : st.deliveryInside;
+  var total   = sub + dc;
 
   sheet.appendRow(buildRow(headers, {
     'orderid':        orderId,
@@ -350,4 +371,42 @@ function saveAbout(about) {
   });
 
   return { success: true };
+}
+
+/* ======== SETTINGS (ডেলিভারি চার্জ ইত্যাদি) ======== */
+
+function getSettings() {
+  var sheet = ensureSheet('Settings');
+  var rows  = sheet.getDataRange().getValues();
+  var out   = { deliveryInside: DEFAULT_SETTINGS.deliveryInside, deliveryOutside: DEFAULT_SETTINGS.deliveryOutside };
+  for (var i = 1; i < rows.length; i++) {
+    var k = String(rows[i][0]).trim();
+    var v = rows[i][1];
+    if ((k === 'deliveryInside' || k === 'deliveryOutside') && v !== '' && !isNaN(Number(v))) {
+      out[k] = Number(v);
+    }
+  }
+  return out;
+}
+
+function saveSettings(s) {
+  if (!s) return { error: 'settings data missing' };
+  var sheet   = ensureSheet('Settings');
+  var headers = getHeaders(sheet);
+  var ts      = new Date();
+  var rows    = sheet.getDataRange().getValues();
+  var rowMap  = {};
+  for (var i = 1; i < rows.length; i++) rowMap[String(rows[i][0]).trim()] = i + 1;
+
+  ['deliveryInside', 'deliveryOutside'].forEach(function(key) {
+    if (s[key] === undefined || s[key] === '' || isNaN(Number(s[key])) || Number(s[key]) < 0) return;
+    var val = Number(s[key]);
+    if (rowMap[key]) {
+      sheet.getRange(rowMap[key], 2).setValue(val);
+      sheet.getRange(rowMap[key], 3).setValue(ts);
+    } else {
+      sheet.appendRow(buildRow(headers, { 'key': key, 'value': val, 'updatedat': ts }));
+    }
+  });
+  return { success: true, settings: getSettings() };
 }

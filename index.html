@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProyojonBD — অনলাইনে অর্ডার করুন</title>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://i.ibb.co">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -179,7 +181,7 @@
     border:none; border-radius:12px; outline:none;
     font-size:1.6rem; font-weight:700; text-align:center;
     color:var(--ink); font-family:var(--font-mono);
-    box-shadow: inset 4px 4px 2px rgba(100,108,125,0.65), inset -4px -4px 5px rgba(255,255,255,0.75);
+    box-shadow:4px 4px 8px rgba(0,0,0,0.12), -4px -4px 8px rgba(255,255,255,0.75);
     transition:box-shadow 0.15s ease;
     cursor:pointer;
   }
@@ -191,7 +193,7 @@
   .gate-verify-btn{
     width:100%; padding:13px; border:none; border-radius:12px;
     background:#EEEEF0; color:var(--ink); font-weight:700; font-size:0.95rem;
-    box-shadow:2px 2px 8px rgb(2220, 200, 210, 0.95), -2px -2px 8px rgba(2220, 230, 211, 0.25);
+    box-shadow:4px 4px 8px rgba(0,0,0,0.12), -4px -4px 8px rgba(255,255,255,0.75);
     cursor:pointer; letter-spacing:0.03em;
     transition:box-shadow 0.15s ease;
   }
@@ -205,6 +207,36 @@
   .report-subnav button.active{ background:var(--primary-deep); border-color:var(--primary); color:var(--white); }
   .report-pane{ display:none; }
   .report-pane.active{ display:block; }
+
+  /* ---------- report hamburger menu ---------- */
+  .report-menu-wrap{ position:relative; margin-bottom:20px; }
+  .report-menu-btn{
+    display:inline-flex; align-items:center; gap:10px;
+    background:var(--white); border:1px solid var(--hairline); color:var(--ink);
+    border-radius:10px; padding:9px 14px; font-weight:700; font-size:0.9rem;
+  }
+  .report-menu-btn:hover{ border-color:var(--primary); }
+  .report-menu-btn[aria-expanded="true"]{ background:var(--primary-deep); color:var(--white); border-color:var(--primary); }
+  #reportSubnav.report-menu{
+    display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:30;
+    flex-direction:column; gap:2px; margin:0; min-width:230px;
+    background:var(--white); border:1px solid var(--hairline); border-radius:12px;
+    padding:6px; box-shadow:0 10px 28px rgba(0,0,0,0.14);
+  }
+  #reportSubnav.report-menu.open{ display:flex; }
+  #reportSubnav.report-menu button{ border:none; border-radius:8px; text-align:left; width:100%; padding:10px 14px; background:transparent; }
+  #reportSubnav.report-menu button:hover{ background:var(--chip); }
+  #reportSubnav.report-menu button.active{ background:var(--primary-deep); color:var(--white); }
+
+  /* ---------- skeleton loading ---------- */
+  .skeleton-card{ background:var(--white); border:1px solid var(--hairline); border-radius:10px; overflow:hidden; }
+  .skeleton-thumb{ aspect-ratio:1/1; }
+  .skeleton-line{ height:10px; border-radius:5px; margin:10px; }
+  .skeleton-thumb, .skeleton-line{
+    background:linear-gradient(90deg,#EDEDE8 25%,#F6F6F2 50%,#EDEDE8 75%);
+    background-size:200% 100%; animation:skel 1.2s linear infinite;
+  }
+  @keyframes skel{ from{ background-position:200% 0; } to{ background-position:-200% 0; } }
 
   /* ---------- dashboard ---------- */
   .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:14px; margin-bottom:10px; }
@@ -248,6 +280,7 @@
     font-size:0.9rem; padding:2px 4px; border-radius:4px;
   }
   .header-search-close:hover{ background:var(--chip); }
+  .filter-bar{
     display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;
   }
   .search-wrap{
@@ -278,7 +311,8 @@
   }
   .status-select.pending{ background:#FFF1DC; color:#9A5B00; }
   .status-select.delivery{ background:#D1FAE5; color:#065F46; }
-  .status-select.cancel{ background:#FBE3E1; color:var(--danger); } display:inline-block; padding:3px 10px; border-radius:999px; font-size:0.76rem; font-weight:700; }
+  .status-select.cancel{ background:#FBE3E1; color:var(--danger); }
+  .status-pill{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:0.76rem; font-weight:700; }
   .status-pill.pending{ background:#FFF1DC; color:var(--gold); }
   .status-pill.delivery{ background:var(--chip); color:var(--primary); }
   .status-pill.cancel{ background:#FBE3E1; color:var(--danger); }
@@ -471,13 +505,20 @@
         <button class="btn btn-outline btn-sm" id="lockAdminBtn" style="margin-right:auto;">🔒 লক করুন</button>
       </h2>
 
-      <div class="report-subnav" id="reportSubnav">
-        <button class="active" data-pane="dashboard">Dashboard</button>
-        <button data-pane="products">পণ্য ব্যবস্থাপনা</button>
-        <button data-pane="orders">অর্ডার রিপোর্ট</button>
-        <button data-pane="income">আয় রিপোর্ট</button>
-        <button data-pane="expense">ব্যয় এন্ট্রি ও রিপোর্ট</button>
-        <button data-pane="aboutedit">About Us সম্পাদনা</button>
+      <div class="report-menu-wrap" id="reportMenuWrap">
+        <button class="report-menu-btn" id="reportMenuBtn" aria-expanded="false" aria-controls="reportSubnav" type="button">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          <span id="reportMenuLabel">Dashboard</span>
+        </button>
+        <div class="report-subnav report-menu" id="reportSubnav">
+          <button class="active" data-pane="dashboard">Dashboard</button>
+          <button data-pane="products">পণ্য ব্যবস্থাপনা</button>
+          <button data-pane="orders">অর্ডার রিপোর্ট</button>
+          <button data-pane="income">আয় রিপোর্ট</button>
+          <button data-pane="expense">ব্যয় এন্ট্রি ও রিপোর্ট</button>
+          <button data-pane="delivery">ডেলিভারি চার্জ</button>
+          <button data-pane="aboutedit">About Us সম্পাদনা</button>
+        </div>
       </div>
 
       <!-- ---------- DASHBOARD ---------- -->
@@ -615,6 +656,21 @@
         <div class="table-wrap" id="expenseTableWrap"><div class="empty-state">লোড হচ্ছে…</div></div>
       </div>
 
+      <!-- ========== DELIVERY CHARGE SETTINGS ========== -->
+      <div class="report-pane" id="pane-delivery">
+        <div class="form-card">
+          <h3 style="margin-top:0;">ডেলিভারি চার্জ নির্ধারণ</h3>
+          <p style="font-size:0.85rem;color:var(--ink-soft);margin-top:0;">এখানে পরিবর্তন করলে সাথে সাথে ওয়েবসাইটের অর্ডার ফর্মে নতুন চার্জ কার্যকর হবে। কোডে কিছু বদলাতে হবে না।</p>
+          <div class="form-grid">
+            <div class="field"><label>ফেনীর ভেতরে (টাকা)</label><input type="number" id="dcInside" min="0"></div>
+            <div class="field"><label>ফেনীর বাইরে (টাকা)</label><input type="number" id="dcOutside" min="0"></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-teal" id="dcSaveBtn">সংরক্ষণ করুন</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ========== ABOUT US EDIT ========== -->
       <div class="report-pane" id="pane-aboutedit">
         <div class="form-card">
@@ -687,11 +743,11 @@
       <div class="area-options">
         <label class="area-option">
           <input type="radio" name="deliveryArea" value="Inside Feni" checked>
-          <span>ফেনীর ভেতরে — ৬০ টাকা</span>
+          <span id="areaLabelInside">ফেনীর ভেতরে</span>
         </label>
         <label class="area-option">
           <input type="radio" name="deliveryArea" value="Outside Feni">
-          <span>ফেনীর বাইরে — ১৫০ টাকা</span>
+          <span id="areaLabelOutside">ফেনীর বাইরে</span>
         </label>
       </div>
     </div>
@@ -748,7 +804,32 @@
    কনফিগারেশন
    ========================================================= */
 const API_URL = "https://script.google.com/macros/s/AKfycbzhR_FwZNlFls6uB0a5FsnVt3yW5_Wt0Q2T8zzkPCLqjBWB0Y4K7QVAjcTYaX8DWvGO/exec"; // আপনার Apps Script Web App URL এখানে বসান
-const DELIVERY_CHARGES = { "Inside Feni": 60, "Outside Feni": 150 }; // টাকা — প্রয়োজনে বদলে নিন
+// ডেলিভারি চার্জ এখন Report → "ডেলিভারি চার্জ" থেকে বদলানো যায়। নিচের মান শুধু ডিফল্ট (শীট থেকে লোড না হওয়া পর্যন্ত)।
+const DELIVERY_CHARGES = { "Inside Feni": 60, "Outside Feni": 150 };
+const PRODUCTS_CACHE_KEY = 'proyojonbd_products_cache_v1';
+const SETTINGS_CACHE_KEY = 'proyojonbd_settings_cache_v1';
+
+function applyDeliverySettings(s){
+  if (!s) return;
+  if (s.deliveryInside  !== undefined && !isNaN(Number(s.deliveryInside)))  DELIVERY_CHARGES["Inside Feni"]  = Number(s.deliveryInside);
+  if (s.deliveryOutside !== undefined && !isNaN(Number(s.deliveryOutside))) DELIVERY_CHARGES["Outside Feni"] = Number(s.deliveryOutside);
+  const a = document.getElementById('areaLabelInside');
+  const b = document.getElementById('areaLabelOutside');
+  if (a) a.textContent = 'ফেনীর ভেতরে — ' + DELIVERY_CHARGES["Inside Feni"] + ' টাকা';
+  if (b) b.textContent = 'ফেনীর বাইরে — ' + DELIVERY_CHARGES["Outside Feni"] + ' টাকা';
+  if (typeof currentProduct !== 'undefined' && currentProduct && document.getElementById('buyModalScrim').classList.contains('open')) updateModalTotal();
+}
+async function loadDeliverySettings(){
+  try{ applyDeliverySettings(JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY))); }catch(e){}
+  if (!API_URL) return;
+  try{
+    const data = await apiGet('action=settings');
+    if (data.settings){
+      applyDeliverySettings(data.settings);
+      try{ localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(data.settings)); }catch(e){}
+    }
+  }catch(e){}
+}
 const ADMIN_PIN = "11296"; // ⚠️ এটা বদলে নিন। এটা real security না, শুধু সাধারণ visitor আটকানোর জন্য।
 
 const SAMPLE_PRODUCTS = []; // Demo পণ্য বাদ — শীট থেকেই আসবে
@@ -881,6 +962,16 @@ document.querySelectorAll('#reportSubnav button').forEach(btn=>{
 });
 
 /* ---------- পণ্য লোড (storefront) ---------- */
+function showProductSkeleton(){
+  const grid = document.getElementById('homeProductGrid');
+  if (!grid) return;
+  grid.innerHTML = Array.from({length:8}).map(()=>`
+    <div class="skeleton-card"><div class="skeleton-thumb"></div>
+      <div class="skeleton-line" style="width:70%"></div>
+      <div class="skeleton-line" style="width:45%"></div></div>`).join('');
+}
+
+// প্রথমে ক্যাশ থেকে সাথে সাথে পণ্য দেখায়, তারপর ব্যাকগ্রাউন্ডে শীট থেকে আপডেট করে
 async function loadProducts(){
   if (!API_URL){
     PRODUCTS = SAMPLE_PRODUCTS;
@@ -889,18 +980,34 @@ async function loadProducts(){
   }
   _renderVersion++;
   const myVersion = _renderVersion;
+
+  let hadCache = false;
+  try{
+    const cached = JSON.parse(localStorage.getItem(PRODUCTS_CACHE_KEY) || 'null');
+    if (Array.isArray(cached) && cached.length){
+      PRODUCTS = cached;
+      hadCache = true;
+      renderProducts();
+    }
+  }catch(e){}
+  if (!hadCache) showProductSkeleton();
+
   try{
     const data = await apiGet('action=products');
     if (myVersion !== _renderVersion) return;
     const fresh = (data.products || []).map(p=>({...p, discount: parseFloat(p.discount)||0}));
     if (fresh.length){
       PRODUCTS = fresh;
-      // search input যা-ই থাকুক clear করে পণ্য দেখানো
-      if (productSearchInput) productSearchInput.value = '';
+      try{ localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(fresh)); }catch(e){}
       renderProducts();
+    } else if (!hadCache){
+      document.getElementById('homeProductGrid').innerHTML = `<div class="empty-state" style="grid-column:1/-1">কোনো পণ্য পাওয়া যায়নি</div>`;
     }
   }catch(err){
     if (myVersion !== _renderVersion) return;
+    if (!hadCache){
+      document.getElementById('homeProductGrid').innerHTML = `<div class="empty-state" style="grid-column:1/-1">পণ্য আনা যায়নি। পেজ রিফ্রেশ করুন।</div>`;
+    }
     showToast("শীট থেকে পণ্য আনা যায়নি");
   }
 }
@@ -909,7 +1016,7 @@ function productCardHTML(p){
   const imgs = p.image ? p.image.split(',').map(u=>u.trim()).filter(Boolean) : [];
   let thumbHtml;
   if (imgs.length > 1){
-    const trackImgs = imgs.map(u=>`<img src="${u}" alt="${p.name}">`).join('');
+    const trackImgs = imgs.map(u=>`<img src="${u}" alt="${p.name}" loading="lazy" decoding="async">`).join('');
     const dots = imgs.map((_,i)=>`<span class="dot${i===0?' active':''}" data-i="${i}"></span>`).join('');
     thumbHtml = `
       <div class="img-slider" data-idx="0" data-total="${imgs.length}">
@@ -919,7 +1026,7 @@ function productCardHTML(p){
         <div class="slider-dots">${dots}</div>
       </div>`;
   } else if (imgs.length === 1){
-    thumbHtml = `<img src="${imgs[0]}" alt="${p.name}">`;
+    thumbHtml = `<img src="${imgs[0]}" alt="${p.name}" loading="lazy" decoding="async">`;
   } else {
     thumbHtml = `<span class="placeholder">ছবি নেই</span>`;
   }
@@ -1090,11 +1197,15 @@ function openBuyModal(id, finalPrice){
   currentQty = 1;
   document.querySelector('input[name="deliveryArea"][value="Inside Feni"]').checked = true;
 
+  // image ফিল্ডে কমা দিয়ে একাধিক URL থাকে — প্রথমটি ব্যবহার করা হচ্ছে
+  const firstImg = currentProduct.image ? currentProduct.image.split(',').map(u=>u.trim()).filter(Boolean)[0] : '';
+  const priceNow = currentProduct._finalPrice;
+  const hasDisc  = Number(currentProduct.price) > Number(priceNow);
   document.getElementById('modalProductPreview').innerHTML = `
-    <div class="modal-product-thumb">${currentProduct.image ? `<img src="${currentProduct.image}" alt="${currentProduct.name}">` : ''}</div>
+    <div class="modal-product-thumb">${firstImg ? `<img src="${firstImg}" alt="${currentProduct.name}">` : ''}</div>
     <div>
       <div class="modal-product-name">${currentProduct.name}</div>
-      <div class="modal-product-price">${money(currentProduct.price)}</div>
+      <div class="modal-product-price">${hasDisc ? `<span style="text-decoration:line-through;color:var(--ink-soft);font-weight:400;margin-right:6px;">${money(currentProduct.price)}</span>` : ''}${money(priceNow)}</div>
     </div>`;
   updateModalTotal();
   buyModalScrim.classList.add('open');
@@ -1167,6 +1278,11 @@ document.getElementById('confirmBuyBtn').addEventListener('click', async ()=>{
   btn.textContent = 'অর্ডার কনফার্ম করুন';
   buyModalScrim.classList.remove('open');
 
+  // সার্ভার যে চার্জ/মোট নির্ধারণ করেছে স্লিপে সেটাই দেখানো
+  if (result && result.deliveryCharge !== undefined){
+    order.deliveryCharge = result.deliveryCharge;
+    order.total = result.total;
+  }
   lastOrderSnapshot = { order, result };
   document.getElementById('confirmOrderId').textContent = result.orderId || 'PRY-000000';
   document.getElementById('confirmScrim').classList.add('open');
@@ -1893,10 +2009,63 @@ document.querySelectorAll('#reportSubnav button').forEach(btn=>{
   }
 });
 
-// Init
-renderAboutPublic();
+/* ===================== REPORT HAMBURGER MENU ===================== */
+const reportMenuBtn   = document.getElementById('reportMenuBtn');
+const reportSubnavEl  = document.getElementById('reportSubnav');
+function setReportMenu(open){
+  reportSubnavEl.classList.toggle('open', open);
+  reportMenuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+reportMenuBtn.addEventListener('click', e=>{
+  e.stopPropagation();
+  setReportMenu(!reportSubnavEl.classList.contains('open'));
+});
+reportSubnavEl.querySelectorAll('button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.getElementById('reportMenuLabel').textContent = btn.textContent;
+    setReportMenu(false);
+  });
+});
+document.addEventListener('click', e=>{
+  if (!document.getElementById('reportMenuWrap').contains(e.target)) setReportMenu(false);
+});
+
+/* ===================== DELIVERY CHARGE SETTINGS (Report) ===================== */
+async function loadDeliveryPane(){
+  document.getElementById('dcInside').value  = DELIVERY_CHARGES["Inside Feni"];
+  document.getElementById('dcOutside').value = DELIVERY_CHARGES["Outside Feni"];
+  await loadDeliverySettings();
+  document.getElementById('dcInside').value  = DELIVERY_CHARGES["Inside Feni"];
+  document.getElementById('dcOutside').value = DELIVERY_CHARGES["Outside Feni"];
+}
+document.querySelector('#reportSubnav button[data-pane="delivery"]').addEventListener('click', loadDeliveryPane);
+
+document.getElementById('dcSaveBtn').addEventListener('click', async ()=>{
+  const inside  = document.getElementById('dcInside').value;
+  const outside = document.getElementById('dcOutside').value;
+  if (inside === '' || outside === '' || Number(inside) < 0 || Number(outside) < 0){
+    showToast('দুটি এলাকার চার্জ সঠিকভাবে লিখুন'); return;
+  }
+  const settings = { deliveryInside: Number(inside), deliveryOutside: Number(outside) };
+  const btn = document.getElementById('dcSaveBtn');
+  btn.disabled = true; btn.textContent = 'সংরক্ষণ হচ্ছে…';
+  try{
+    const res = await apiPost({ action:'saveSettings', settings });
+    if (res && res.error) throw new Error(res.error);
+    applyDeliverySettings(settings);
+    try{ localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settings)); }catch(e){}
+    showToast('ডেলিভারি চার্জ আপডেট হয়েছে');
+  }catch(err){
+    showToast('সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন');
+  }
+  btn.disabled = false; btn.textContent = 'সংরক্ষণ করুন';
+});
+
+// Init — পণ্য সবার আগে (ক্যাশ থেকে তাৎক্ষণিক), বাকিগুলো পরে
 loadProducts();
+loadDeliverySettings();
 initImageBoxes();
+renderAboutPublic();
 </script>
 </body>
 </html>
