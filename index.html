@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProyojonBD — অনলাইনে অর্ডার করুন</title>
+<link rel="icon" id="siteFavicon" href="data:,">
+<link rel="apple-touch-icon" id="siteAppleIcon" href="data:,">
 <link rel="preconnect" href="https://script.google.com">
 <link rel="preconnect" href="https://i.ibb.co">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -492,7 +494,7 @@
   .skeleton-card{ border-color:var(--card-border); }
   .product-card{ border-color:var(--card-border); }
   .product-card:hover{ box-shadow:0 6px 18px rgba(26,31,54,0.14); }
-  .product-thumb{ aspect-ratio:1/0.9; border-bottom:1px solid #dfe5e1; }
+  .product-thumb{ aspect-ratio:1/0.9; border-bottom:2px solid #4e8565; }
   .product-body{ padding:6px 10px 8px; gap:0; }
   .cat-row{ height:18px; }
   .product-cat-tag{ margin-bottom:0; }
@@ -571,6 +573,20 @@
   .cart-sub{ font-family:var(--font-mono); font-weight:700; font-size:0.85rem; min-width:70px; text-align:right; }
   .cart-del{ background:none; border:none; color:var(--danger); font-size:1rem; padding:4px 6px; cursor:pointer; }
   .cart-form .field{ margin-top:12px; }
+
+  /* ===== v9 ===== */
+  .hero-prod-img{ width:400px; height:250px; max-width:100%; object-fit:cover; border-radius:5px; }
+  @media(max-width:520px){ .hero-prod-img{ width:400px; height:250px; max-width:100%; } }
+  .product-card .product-name{ color:#1E8449; padding-top:5px; }
+  .product-cat-tag{ background:#e85e22; color:#fff; }
+  #lowStockBtn .cart-count{ background:var(--danger); }
+  .product-card.flash{ animation:cardFlash 2.2s ease; }
+  @keyframes cardFlash{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,122,47,0); } 20%,70%{ box-shadow:0 0 0 4px var(--orange); } }
+  .ls-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--hairline); font-size:0.9rem; }
+  .ls-row small{ color:var(--ink-soft); }
+  .ls-qty{ font-family:var(--font-mono); font-weight:700; white-space:nowrap; }
+  .ls-qty.out{ color:var(--danger); }
+  .ls-qty.low{ color:#B45309; }
 </style>
 </head>
 <body>
@@ -587,6 +603,10 @@
       <button class="nav-btn" data-section="report">Report</button>
     </nav>
     <div class="header-right">
+      <button class="cart-icon-btn" id="lowStockBtn" type="button" style="display:none;" aria-label="Low Stock" title="Low Stock">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        <span class="cart-count" id="lowStockCount" style="display:none;">0</span>
+      </button>
       <button class="cart-icon-btn" id="cartBtn" type="button" aria-label="কার্ট" title="কার্ট">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.4a2 2 0 002 1.6h8.1a2 2 0 002-1.5L21 8H6"/></svg>
         <span class="cart-count" id="cartCount" style="display:none;">0</span>
@@ -616,7 +636,7 @@
     </div>
     <div class="hero-slides" id="heroSlides">
       <div class="hero-slide active" data-first="1">
-        <h1><span class="site-name-text">ProyojonBD</span> — আপনার দৈনন্দিন প্রয়োজন, এক ক্লিকে</h1>
+        <h1><span class="site-name-text" data-notr>ProyojonBD</span> — আপনার দৈনন্দিন প্রয়োজন, এক ক্লিকে</h1>
         <p>পছন্দের পণ্য বেছে নিন, Buy Now চাপুন, ক্যাশ অন ডেলিভারিতে অর্ডার করুন</p>
       </div>
     </div>
@@ -699,14 +719,14 @@
         <div class="report-subnav report-menu" id="reportSubnav">
           <button class="active" data-pane="dashboard">Dashboard</button>
           <button data-pane="report">Report</button>
-          <button data-pane="products">বিক্রয়ের পণ্য</button>
+          <button data-pane="products">Sale Products</button>
           <button data-pane="inventory">Products</button>
-          <button data-pane="orders">অর্ডার রিপোর্ট</button>
+          <button data-pane="orders">Orders</button>
           <button data-pane="expense">Expenses</button>
           <button data-pane="invest">Invest</button>
           <button data-pane="cash">Cash</button>
-          <button data-pane="delivery">ডেলিভারি চার্জ</button>
-          <button data-pane="aboutedit">About Us সম্পাদনা</button>
+          <button data-pane="delivery">Delivery Charge</button>
+          <button data-pane="aboutedit">About Us</button>
           <button data-pane="settings">Settings</button>
         </div>
       </div>
@@ -852,6 +872,7 @@
             <div class="field full"><label>বিবরণ</label><input type="text" id="expDesc" placeholder="যেমন: প্যাকেজিং বক্স কেনা"></div>
           </div>
           <div class="form-actions">
+            <button class="btn btn-outline" id="expCancelBtn" type="button" style="display:none;">বাতিল</button>
             <button class="btn btn-teal" id="expSaveBtn">সংরক্ষণ করুন</button>
           </div>
         </div>
@@ -980,7 +1001,7 @@
       </div>
 
       <!-- ========== SETTINGS (Web Info / Social / Administration) ========== -->
-      <div class="report-pane" id="pane-settings">
+      <div class="report-pane acc-row" id="pane-settings">
 
         <div class="acc" data-acc="webinfo">
           <button type="button" class="acc-btn" aria-expanded="false"><span>Web Info</span><span class="chev">▾</span></button>
@@ -1293,6 +1314,17 @@
     <div class="modal-actions">
       <button class="btn-secondary" id="cancelBuyBtn">বাতিল</button>
       <button class="btn-primary" id="confirmBuyBtn">অর্ডার কনফার্ম করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== LOW STOCK ===================== -->
+<div class="modal-scrim" id="lowStockScrim">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 style="margin-top:0;">🔔 Low Stock</h3>
+    <div id="lowStockList"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="lowStockCloseBtn" type="button">বন্ধ করুন</button>
     </div>
   </div>
 </div>
@@ -1720,6 +1752,11 @@ function siteMobiles(){
 function applySiteInfo(){
   const name = SITE.name || SITE_DEFAULT.name;
   document.getElementById('brandName').textContent = name;
+  // Settings-এর লোগো = ফেভিকন
+  const favUrl = SITE.logo || ('data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 13C4 7 9 3 18 3C18 12 14 19 4 20C4 17 4 15 4 13Z" fill="#94A3B8"/><path d="M4 20C6 14 9 10 17 5" stroke="#0F1322" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>'));
+  document.getElementById('siteFavicon').href = favUrl;
+  document.getElementById('siteAppleIcon').href = favUrl;
+  document.title = name + ' — ' + t('অনলাইনে অর্ডার করুন');
   document.querySelectorAll('.site-name-text').forEach(el=> el.textContent = name);
   if (SITE.logo){
     document.getElementById('brandLogo').innerHTML = `<img class="brand-logo" src="${esc(SITE.logo)}" alt="${esc(name)}">`;
@@ -1845,6 +1882,7 @@ function showAdminView(){
   document.getElementById('adminView').style.display = 'block';
   document.getElementById('adminWho').textContent = localStorage.getItem('proyojonbd_admin_name') ? '— ' + localStorage.getItem('proyojonbd_admin_name') : '';
   loadDashboard();
+  refreshLowStock();
 }
 /* ---------- OTP PIN Boxes ---------- */
 (function(){
@@ -1892,6 +1930,8 @@ document.getElementById('gateSubmitBtn').addEventListener('click', ()=>{
 document.getElementById('lockAdminBtn').addEventListener('click', ()=>{
   localStorage.removeItem('proyojonbd_admin_unlocked');
   localStorage.removeItem('proyojonbd_admin_name');
+  closeAllAcc();
+  refreshLowStock();
   // Home-এ চলে যাওয়া
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector('.nav-btn[data-section="home"]').classList.add('active');
@@ -2011,7 +2051,7 @@ function productCardHTML(p){
     </div>`;
 
   return `
-    <div class="product-card">
+    <div class="product-card" data-pid="${esc(p.id)}">
       <div class="product-thumb">${thumbHtml}</div>
       <div class="product-body">
         <div class="cat-row">${p.category ? `<span class="product-cat-tag">${esc(p.category)}</span>` : ''}</div>
@@ -2127,6 +2167,20 @@ function startHeroTimer(){
   clearInterval(heroTimer);
   if (heroSlideEls().length > 1) heroTimer = setInterval(()=>{ if (!document.hidden) showHero(heroIdx + 1); }, HERO_INTERVAL_MS);
 }
+function goToProductCard(id){
+  const find = ()=> document.querySelector('#homeProductGrid .product-card[data-pid="' + String(id).replace(/"/g,'\\"') + '"]');
+  let card = find();
+  if (!card){   // সার্চ/ফিল্টারে লুকানো থাকলে ফিল্টার সরিয়ে আবার দেখানো
+    const s = document.getElementById('productSearch'); if (s) s.value = '';
+    const c = document.getElementById('categoryFilter'); if (c) c.value = '';
+    renderProducts();
+    card = find();
+  }
+  if (!card) return;
+  card.scrollIntoView({ behavior:'smooth', block:'center' });
+  card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+  setTimeout(()=> card.classList.remove('flash'), 2400);
+}
 function buildHeroSlides(){
   const active = (PRODUCTS||[]).filter(p=>(p.status||'Active') !== 'Inactive');
   const sig = active.map(p=>[p.id,p.name,p.image,p.price,p.discount,p.unit].join('|')).join('~');
@@ -2142,7 +2196,7 @@ function buildHeroSlides(){
     el.innerHTML = `${img ? `<img class="hero-prod-img" src="${esc(img)}" alt="">` : ''}
       <div class="hero-prod-name">${esc(p.name)}</div>
       <div class="hero-prod-price">${money(productFinalPrice(p))}${unitSuffix(p)}</div>`;
-    el.addEventListener('click', ()=> openBuyModal(p.id, productFinalPrice(p)));
+    el.addEventListener('click', ()=> goToProductCard(p.id));
     wrap.appendChild(el);
   });
   const n = heroSlideEls().length;
@@ -2892,27 +2946,160 @@ function updateExpVoucher(){
 document.getElementById('expDate').value = todayStr();
 updateExpVoucher();
 
+let _expEditId = '';
+function resetExpForm(){
+  _expEditId = '';
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expDesc').value = '';
+  document.getElementById('expDate').value = todayStr();
+  document.getElementById('expSaveBtn').textContent = 'সংরক্ষণ করুন';
+  document.getElementById('expCancelBtn').style.display = 'none';
+  updateExpVoucher();
+}
+function openExpenseForm(){
+  const acc = document.querySelector('.acc[data-acc="expense"]');
+  closeAllAcc(acc);
+  acc.classList.add('open');
+  const b = acc.querySelector(':scope > .acc-btn'); if (b) b.setAttribute('aria-expanded', 'true');
+}
+document.getElementById('expCancelBtn').addEventListener('click', resetExpForm);
 document.getElementById('expSaveBtn').addEventListener('click', async ()=>{
   const amount = document.getElementById('expAmount').value;
-  if (!amount){ showToast('পরিমাণ লিখুন'); return; }
+  if (!(Number(amount) > 0)){ showToast('পরিমাণ লিখুন'); return; }
   const expense = {
     category: document.getElementById('expCategory').value,
     date: document.getElementById('expDate').value || todayStr(),
     amount: Number(amount),
     description: document.getElementById('expDesc').value
   };
+  const editing = !!_expEditId;
+  if (editing) expense.expenseId = _expEditId;
   const btn = document.getElementById('expSaveBtn');
   btn.disabled = true; btn.textContent = 'সংরক্ষণ হচ্ছে…';
   try{
-    await apiPost({ action:'addExpense', expense });
-    showToast('খরচ যুক্ত করা হয়েছে');
-    document.getElementById('expAmount').value = '';
-    document.getElementById('expDesc').value = '';
+    const res = await apiPost({ action: editing ? 'updateExpense' : 'addExpense', expense });
+    if (res && res.error) throw new Error(res.error);
+    showToast(editing ? 'খরচ আপডেট হয়েছে' : 'খরচ যুক্ত করা হয়েছে');
+    btn.disabled = false;
+    resetExpForm();
     await loadExpenseReport();
   }catch(err){
-    showToast('খরচ যুক্ত করা যায়নি');
+    showToast(err.message || 'খরচ সংরক্ষণ করা যায়নি');
+    btn.disabled = false; btn.textContent = editing ? 'আপডেট করুন' : 'সংরক্ষণ করুন';
   }
-  btn.disabled = false; btn.textContent = 'সংরক্ষণ করুন';
+});
+
+/* ---- ভাউচার প্রিন্ট ---- */
+function numToWordsBD(n){
+  n = Math.floor(Math.abs(Number(n) || 0));
+  if (n === 0) return 'Zero';
+  const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const two = x=> x < 20 ? ones[x] : tens[Math.floor(x/10)] + (x % 10 ? ' ' + ones[x % 10] : '');
+  const three = x=> (x >= 100 ? ones[Math.floor(x/100)] + ' Hundred' + (x % 100 ? ' ' : '') : '') + (x % 100 ? two(x % 100) : '');
+  const parts = [];
+  const crore = Math.floor(n / 1e7); n %= 1e7;
+  const lakh = Math.floor(n / 1e5); n %= 1e5;
+  const th = Math.floor(n / 1000); n %= 1000;
+  if (crore) parts.push(three(crore) + ' Crore');
+  if (lakh) parts.push(two(lakh) + ' Lakh');
+  if (th) parts.push(two(th) + ' Thousand');
+  if (n) parts.push(three(n));
+  return parts.join(' ');
+}
+function amountInWords(a){
+  a = Math.round((Number(a) || 0) * 100) / 100;
+  const taka = Math.floor(a), paisa = Math.round((a - taka) * 100);
+  const two = x=> numToWordsBD(x);
+  return 'Taka ' + numToWordsBD(taka) + (paisa ? ' and ' + two(paisa) + ' Paisa' : '') + ' Only';
+}
+function printExpenseVoucher(e){
+  const win = window.open('', '_blank');
+  if (!win){ showToast('পপআপ ব্লক করা আছে, অনুমতি দিন'); return; }
+  const amt = Number(e.amount) || 0;
+  const contact = [siteMobiles().join(', '), SITE.email].filter(Boolean).join('  |  ');
+  writeDoc(win, `
+    <html><head><meta charset="utf-8"><title>Voucher ${esc(e.voucherNo||'')}</title>
+    <style>
+      @page{ size:A4; margin:12mm; }
+      *{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      body{ font-family:'Hind Siliguri', Arial, sans-serif; color:#1A1F36; margin:0; padding:0; }
+      .v{ border:2px solid #1A1F36; padding:0; }
+      .v-head{ padding:16px 20px 10px; text-align:center; border-bottom:1px solid #1A1F36; }
+      .v-head h2{ font-size:22px; }
+      .v-sub{ font-size:11.5px; color:#4B5563; margin-top:2px; line-height:1.5; }
+      .v-title{ background:#1A1F36; color:#fff; text-align:center; font-weight:700; letter-spacing:3px; font-size:15px; padding:8px 0; }
+      .v-body{ padding:16px 20px 8px; }
+      .v-meta{ display:flex; justify-content:space-between; gap:12px; margin-bottom:14px; font-size:13px; }
+      .v-meta div{ border:1px solid #1A1F36; padding:6px 12px; min-width:190px; }
+      .v-meta b{ display:inline-block; min-width:78px; }
+      table{ width:100%; border-collapse:collapse; font-size:13px; }
+      th, td{ border:1px solid #1A1F36; padding:9px 10px; vertical-align:top; }
+      th{ background:#EFEFEB; text-align:center; }
+      td.c{ text-align:center; } td.r{ text-align:right; white-space:nowrap; }
+      tr.tot td{ font-weight:700; background:#F5F5F0; }
+      .desc{ min-height:84px; }
+      .words{ margin-top:12px; border:1px solid #1A1F36; padding:8px 12px; font-size:13px; }
+      .words b{ margin-right:6px; }
+      .sign{ display:flex; justify-content:space-between; gap:26px; margin-top:64px; padding:0 20px 18px; }
+      .sign div{ flex:1; text-align:center; border-top:1px solid #1A1F36; padding-top:6px; font-size:12px; font-weight:600; }
+      .v-foot{ border-top:1px solid #1A1F36; text-align:center; font-size:10.5px; color:#6B7280; padding:6px; }
+    </style></head>
+    <body>
+      <div class="v">
+        <div class="v-head">
+          ${printBrand(52)}
+          <div class="v-sub">${SITE.address ? '📍 ' + esc(SITE.address) : ''}${contact ? '<br>' + esc(contact) : ''}</div>
+        </div>
+        <div class="v-title">PAYMENT VOUCHER</div>
+        <div class="v-body">
+          <div class="v-meta">
+            <div><b>Voucher No</b>: ${esc(e.voucherNo || '—')}</div>
+            <div><b>Date</b>: ${esc(expDateStr(e))}</div>
+          </div>
+          <table>
+            <thead><tr><th style="width:50px;">SL</th><th>Particulars</th><th style="width:130px;">Amount (Tk)</th></tr></thead>
+            <tbody>
+              <tr><td class="c">1</td>
+                <td class="desc"><b>${esc(e.category || '')}</b>${e.description ? '<br>' + esc(e.description) : ''}</td>
+                <td class="r">${amt.toLocaleString('en-BD', { minimumFractionDigits:2, maximumFractionDigits:2 })}</td></tr>
+              <tr class="tot"><td colspan="2" style="text-align:right;">Total</td><td class="r">${amt.toLocaleString('en-BD', { minimumFractionDigits:2, maximumFractionDigits:2 })}</td></tr>
+            </tbody>
+          </table>
+          <div class="words"><b>In Words:</b>${amountInWords(amt)}</div>
+        </div>
+        <div class="sign"><div>Prepared By</div><div>Received By</div><div>Approved By</div></div>
+        <div class="v-foot">This is a computer generated voucher.</div>
+      </div>
+      <script>window.print();<\/script>
+    </body></html>`);
+  win.document.close();
+}
+document.getElementById('expenseTableWrap').addEventListener('click', async ev=>{
+  const b = ev.target.closest('button[data-act]'); if (!b) return;
+  const e = _currentExpenses.find(x=> String(x.expenseId) === String(b.dataset.id)); if (!e) return;
+  if (b.dataset.act === 'print'){ printExpenseVoucher(e); return; }
+  if (b.dataset.act === 'edit'){
+    _expEditId = e.expenseId;
+    openExpenseForm();
+    document.getElementById('expVoucher').value = e.voucherNo || '';
+    document.getElementById('expDate').value = e.date || toYmd(e.timestamp) || todayStr();
+    document.getElementById('expCategory').value = e.category || 'অন্যান্য';
+    document.getElementById('expAmount').value = e.amount;
+    document.getElementById('expDesc').value = e.description || '';
+    document.getElementById('expSaveBtn').textContent = 'আপডেট করুন';
+    document.getElementById('expCancelBtn').style.display = '';
+    document.getElementById('expAmount').scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+  if (!ask('এই ভাউচারটি মুছে ফেলবেন?')) return;
+  try{
+    const res = await apiPost({ action:'deleteExpense', id:e.expenseId });
+    if (res && res.error) throw new Error(res.error);
+    showToast('মুছে ফেলা হয়েছে');
+    if (_expEditId === e.expenseId) resetExpForm();
+    loadExpenseReport();
+  }catch(err){ showToast(err.message || 'মোছা যায়নি'); }
 });
 
 async function loadExpenseReport(){
@@ -2937,13 +3124,14 @@ function renderExpenseTable(){
   const total = _currentExpenses.reduce((s,e)=>s+(Number(e.amount)||0),0);
   wrap.innerHTML = `
     <table class="data-table">
-      <thead><tr><th>Voucher No</th><th>তারিখ</th><th>ক্যাটাগরি</th><th>বিবরণ</th><th>পরিমাণ</th></tr></thead>
+      <thead><tr><th>Voucher No</th><th>তারিখ</th><th>ক্যাটাগরি</th><th>বিবরণ</th><th>পরিমাণ</th><th></th></tr></thead>
       <tbody>
         ${_currentExpenses.map(e=>`
-          <tr><td>${esc(e.voucherNo||'')}</td><td>${expDateStr(e)}</td><td>${e.category||''}</td><td>${e.description||''}</td><td>${money(e.amount)}</td></tr>
+          <tr><td>${esc(e.voucherNo||'')}</td><td>${expDateStr(e)}</td><td>${e.category||''}</td><td>${e.description||''}</td><td>${money(e.amount)}</td>
+            <td class="row-actions" style="white-space:nowrap;"><button type="button" data-act="edit" data-id="${esc(e.expenseId)}">Edit</button><button type="button" class="danger" data-act="del" data-id="${esc(e.expenseId)}">Delete</button><button type="button" data-act="print" data-id="${esc(e.expenseId)}">Print</button></td></tr>
         `).join('')}
       </tbody>
-      <tfoot><tr><td colspan="4">সর্বমোট</td><td>${money(total)}</td></tr></tfoot>
+      <tfoot><tr><td colspan="4">সর্বমোট</td><td>${money(total)}</td><td></td></tr></tfoot>
     </table>`;
   window._expenseTotal = total;
 }
@@ -2983,9 +3171,12 @@ async function renderAboutPublic(){
     }catch(e){}
   }
   const points = data.points.split('\n').filter(p=>p.trim());
+  const nm = SITE.name || SITE_DEFAULT.name;
+  const aTitle = data.title === ABOUT_DEFAULT.title ? data.title.replace(/ProyojonBD/g, nm) : data.title;
+  const aDesc  = data.desc  === ABOUT_DEFAULT.desc  ? data.desc.replace(/ProyojonBD/g, nm)  : data.desc;
   document.getElementById('aboutContent').innerHTML = `
-    <h2>${data.title}</h2>
-    <p>${data.desc}</p>
+    <h2>${aTitle}</h2>
+    <p>${aDesc}</p>
     ${points.length ? `<ul class="about-points">
       ${points.map(pt=>`<li>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
@@ -3119,6 +3310,7 @@ document.querySelectorAll('.acc-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const acc = btn.closest('.acc');
     const open = !acc.classList.contains('open');
+    if (open) closeAllAcc(acc);   // এক ফরম খুললে অন্যগুলো বন্ধ
     acc.classList.toggle('open', open);
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     if (open && ACC_HOOKS[acc.dataset.acc]) ACC_HOOKS[acc.dataset.acc]();
@@ -3389,6 +3581,7 @@ async function loadStock(){
   document.getElementById('stockTableWrap').innerHTML = '<div class="empty-state">লোড হচ্ছে…</div>';
   try{ STOCK = await apiGet('action=stock'); }
   catch(e){ showToast('Stock আনা যায়নি'); return; }
+  setLowStock(STOCK.products);
   const sel = document.getElementById('stockProductSel');
   const cur = sel.value;
   sel.innerHTML = (STOCK.products||[]).map(p=>`<option value="${esc(p.product)}">${esc(p.product)}</option>`).join('');
@@ -3785,7 +3978,7 @@ function writeDoc(win, html){ win.document.write(trHtml(html)); }
 function updateLangUI(){
   document.querySelectorAll('#langSwitch button').forEach(b=> b.classList.toggle('active', b.dataset.lang === LANG));
   document.documentElement.lang = LANG === 'en' ? 'en' : 'bn';
-  document.title = t('ProyojonBD — অনলাইনে অর্ডার করুন');
+  document.title = (SITE.name || SITE_DEFAULT.name) + ' — ' + t('অনলাইনে অর্ডার করুন');
 }
 function rerenderAfterLang(){
   const safe = fn=>{ try{ fn(); }catch(e){} };
@@ -3817,6 +4010,7 @@ document.getElementById('langSwitch').addEventListener('click', e=>{
 
 /* ===================== REPORT / INVEST / CASH ===================== */
 Object.assign(I18N, {
+  'অনলাইনে অর্ডার করুন':'Order Online',
   'দৈনিক':'Daily', 'সাপ্তাহিক':'Weekly', 'মাসিক':'Monthly', 'বাৎসরিক':'Yearly',
   'তারিখ বাছুন':'Pick date', 'কোনো তথ্য নেই':'No data', 'খাত':'Sector', 'আয়':'Income', 'খরচ':'Expense',
   'অর্ডার সংখ্যা':'Orders', 'খাত ভিত্তিক Income':'Income by Sector', 'Profit and Loss':'Profit and Loss',
@@ -4275,6 +4469,70 @@ document.getElementById('cartConfirmBtn').addEventListener('click', async ()=>{
   document.getElementById('confirmScrim').classList.add('open');
 });
 saveCart();
+
+
+/* ===================== ফরম অটো বন্ধ ===================== */
+function closeAllAcc(except){
+  document.querySelectorAll('.acc.open').forEach(a=>{
+    if (a === except) return;
+    a.classList.remove('open');
+    const b = a.querySelector(':scope > .acc-btn');
+    if (b) b.setAttribute('aria-expanded', 'false');
+  });
+}
+// মেনু বদলালে বা অন্য পেজে গেলে সব ফরম বন্ধ
+document.querySelectorAll('#reportSubnav button').forEach(b=> b.addEventListener('click', ()=> closeAllAcc()));
+document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click', ()=> closeAllAcc()));
+
+/* ===================== LOW STOCK নোটিফিকেশন ===================== */
+const LOW_LIMIT_PCS = 6;   // পিস হলে ৬ বা কম
+const LOW_LIMIT_KG  = 5;   // কেজি হলে ৫ বা কম
+let LOW_RAW = [];
+let LOW_STOCK = [];
+function lowInfo(p){
+  const name = String(p.product || '').trim().toLowerCase();
+  const prod = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).find(x=> String(x.name || '').trim().toLowerCase() === name);
+  const kg = !!(prod && isKg(prod));
+  return { kg, limit: kg ? LOW_LIMIT_KG : LOW_LIMIT_PCS };
+}
+function recomputeLowStock(){
+  LOW_STOCK = LOW_RAW.map(p=> ({ ...p, _i: lowInfo(p) }))
+    .filter(p=> Number(p.stock) <= p._i.limit)
+    .sort((x,y)=> Number(x.stock) - Number(y.stock));
+  const c = document.getElementById('lowStockCount');
+  c.textContent = LOW_STOCK.length;
+  c.style.display = LOW_STOCK.length ? '' : 'none';
+}
+function setLowStock(products){ LOW_RAW = products || []; recomputeLowStock(); }
+async function refreshLowStock(){
+  const btn = document.getElementById('lowStockBtn');
+  const unlocked = localStorage.getItem('proyojonbd_admin_unlocked') === 'yes';
+  btn.style.display = unlocked ? '' : 'none';   // শুধু অ্যাডমিনের জন্য
+  if (!unlocked || !API_URL) return;
+  try{ const d = await apiGet('action=stock'); setLowStock(d.products); }catch(e){}
+}
+function openLowStock(){
+  recomputeLowStock();
+  const box = document.getElementById('lowStockList');
+  box.innerHTML = LOW_STOCK.length
+    ? LOW_STOCK.map(p=>{
+        const out = Number(p.stock) <= 0;
+        const unit = p._i.kg ? 'KG' : 'পিস';
+        return `<div class="ls-row"><div><b>${esc(p.product)}</b>${p.brand ? `<br><small>${esc(p.brand)}</small>` : ''}</div>
+          <div class="ls-qty ${out ? 'out' : 'low'}">${out ? 'স্টক শেষ' : 'স্টক: ' + fmtN(p.stock) + ' ' + unit}</div></div>`;
+      }).join('')
+    : '<div class="empty-state">সব পণ্যের স্টক পর্যাপ্ত আছে</div>';
+  document.getElementById('lowStockScrim').classList.add('open');
+}
+// পণ্য লোড হলে (ইউনিট জানা গেলে) আবার হিসাব
+(function(){
+  const orig = renderProducts;
+  renderProducts = function(){ const r = orig.apply(this, arguments); try{ recomputeLowStock(); }catch(e){} return r; };
+})();
+document.getElementById('lowStockBtn').addEventListener('click', openLowStock);
+document.getElementById('lowStockCloseBtn').addEventListener('click', ()=> document.getElementById('lowStockScrim').classList.remove('open'));
+refreshLowStock();
+setInterval(refreshLowStock, 5 * 60 * 1000);
 
 // Init — পণ্য সবার আগে (ক্যাশ থেকে তাৎক্ষণিক), বাকিগুলো পরে
 loadProducts();

@@ -137,6 +137,8 @@ function doPost(e) {
     case 'addProduct':        return jsonResponse(addProduct(body.product));
     case 'updateProduct':     return jsonResponse(updateProduct(body.product));
     case 'addExpense':        return jsonResponse(addExpense(body.expense));
+    case 'updateExpense':     return jsonResponse(updateExpense(body.expense));
+    case 'deleteExpense':     return jsonResponse(deleteExpense(body.id));
     case 'saveAbout':         return jsonResponse(saveAbout(body.about));
     case 'saveSettings':      return jsonResponse(saveSettings(body.settings));
     case 'addItem':           return jsonResponse(addItem(body.item));
@@ -355,6 +357,39 @@ function getExpenses() {
                voucherNo:String(o.voucherno||''), date:o.date ? fmtDate(o.date) : '' };
     }).reverse()
   };
+}
+
+function updateExpense(exp) {
+  if (!exp || !exp.expenseId) return { error: 'id দরকার' };
+  var amt = r2(exp.amount);
+  if (!(amt > 0)) return { error: 'সঠিক পরিমাণ দিন' };
+  var sheet = ensureSheet('Expenses');
+  var rows  = sheet.getDataRange().getValues();
+  var idC   = colIndex(sheet, 'expenseId');
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idC]) !== String(exp.expenseId)) continue;
+    var map = { 'category': exp.category || 'অন্যান্য', 'description': exp.description || '', 'amount': amt, 'date': validYmd(exp.date) };
+    Object.keys(map).forEach(function(k) {
+      var c = colIndex(sheet, k);
+      if (c < 0) return;
+      var cell = sheet.getRange(i + 1, c + 1);
+      if (k === 'date') cell.setNumberFormat('@');
+      cell.setValue(map[k]);
+    });
+    return { success: true };
+  }
+  return { error: 'রেকর্ড পাওয়া যায়নি' };
+}
+
+function deleteExpense(id) {
+  if (!id) return { error: 'id দরকার' };
+  var sheet = ensureSheet('Expenses');
+  var rows  = sheet.getDataRange().getValues();
+  var idC   = colIndex(sheet, 'expenseId');
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idC]) === String(id)) { sheet.deleteRow(i + 1); return { success: true }; }
+  }
+  return { error: 'রেকর্ড পাওয়া যায়নি' };
 }
 
 function addExpense(exp) {
