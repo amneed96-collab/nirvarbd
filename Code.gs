@@ -6,7 +6,7 @@
 var SHEET_SCHEMAS = {
   'Products': ['id','name','category','unit','desc','price','discount','stock','image','status'],
   'Orders':   ['orderId','timestamp','customerName','phone','productName','category','deliveryArea','address','quantity','unit','color','size','unitPrice','subtotal','deliveryCharge','total','status'],
-  'Expenses': ['expenseId','timestamp','category','description','amount'],
+  'Expenses': ['expenseId','timestamp','category','description','amount','voucherNo','date'],
   'About':    ['key','value','updatedAt'],
   'Settings': ['key','value','updatedAt'],
   'Items':    ['itemId','name','brand','createdAt'],
@@ -299,6 +299,7 @@ function saveOrder(order) {
   // ডেলিভারি চার্জ সবসময় Settings শীট থেকে (ক্লায়েন্টের পাঠানো মান বিশ্বাস করা হয় না)
   var st      = getSettings();
   var dc      = (area === 'Outside Feni') ? st.deliveryOutside : st.deliveryInside;
+  if (order.noDelivery === true) dc = 0;   // কার্টের একাধিক পণ্যে ডেলিভারি চার্জ একবারই
   var total   = sub + dc;
 
   sheet.appendRow(buildRow(headers, {
@@ -350,24 +351,42 @@ function getExpenses() {
   return {
     expenses: rowsToObjects(rows).map(function(o){
       return { expenseId:o.expenseid, timestamp:o.timestamp,
-               category:o.category||'', description:o.description||'', amount:Number(o.amount)||0 };
+               category:o.category||'', description:o.description||'', amount:Number(o.amount)||0,
+               voucherNo:String(o.voucherno||''), date:o.date ? fmtDate(o.date) : '' };
     }).reverse()
   };
 }
 
 function addExpense(exp) {
   if (!exp || exp.amount===undefined) return { error: 'amount দরকার' };
-  var sheet   = ensureSheet('Expenses');
-  var headers = getHeaders(sheet);
-  var id      = 'EXP-' + new Date().getTime();
-  sheet.appendRow(buildRow(headers, {
-    'expenseid':   id,
-    'timestamp':   new Date(),
-    'category':    exp.category    || 'অন্যান্য',
-    'description': exp.description || '',
-    'amount':      Number(exp.amount) || 0
-  }));
-  return { success:true, expenseId:id };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sheet   = ensureSheet('Expenses');
+    var headers = getHeaders(sheet);
+    // অটো Voucher No: সর্বোচ্চ নম্বর + ১
+    var vc = colIndex(sheet, 'voucherNo'), max = 0;
+    if (vc >= 0 && sheet.getLastRow() > 1) {
+      sheet.getRange(2, vc + 1, sheet.getLastRow() - 1, 1).getValues().forEach(function(r) {
+        var m = String(r[0] || '').match(/(\d+)\s*$/);
+        if (m) max = Math.max(max, parseInt(m[1], 10));
+      });
+    }
+    var voucher = 'V-' + ('0000' + (max + 1)).slice(-4);
+    var id      = 'EXP-' + new Date().getTime();
+    appendRowText(sheet, headers, {
+      'expenseid':   id,
+      'timestamp':   new Date(),
+      'category':    exp.category    || 'অন্যান্য',
+      'description': exp.description || '',
+      'amount':      Number(exp.amount) || 0,
+      'voucherno':   voucher,
+      'date':        validYmd(exp.date)
+    }, ['voucherno', 'date']);
+    return { success:true, expenseId:id, voucherNo:voucher };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function jsonResponse(obj) {
@@ -450,7 +469,7 @@ function colIndex(sheet, name) {
 /* ======== SETTINGS (ডেলিভারি চার্জ, ওয়েব ইনফো, সোশ্যাল) ======== */
 
 var NUM_SETTING_KEYS  = ['deliveryInside', 'deliveryOutside'];
-var TEXT_SETTING_KEYS = ['webName','webAddress','webLogo','webMobile','webEmail',
+var TEXT_SETTING_KEYS = ['webName','webAddress','webLogo','webMobile','webMobile2','webMobile3','webEmail',
                          'facebook','youtube','instagram','twitter','whatsapp'];
 
 function clearSettingsCache() {

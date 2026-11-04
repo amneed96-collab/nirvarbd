@@ -522,6 +522,55 @@
   .rpt-note{ font-size:0.78rem; color:var(--ink-soft); margin-top:8px; }
   .period-bar{ display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
   .period-bar .field{ max-width:200px; }
+
+  /* ===== v8: হেডার/ফুটার/স্লাইড/কার্ড/কার্ট ===== */
+  .header-inner{ padding:10px 0; }
+  .brand img.brand-logo{ height:58px; max-width:240px; }
+  .hero-slides{ min-height:210px; }
+  .hero-prod-img{ width:150px; height:150px; border-radius:5px; }
+  @media(max-width:520px){ .hero-prod-img{ width:120px; height:120px; } }
+
+  /* মেনুর ফর্ম বাটন পাশাপাশি */
+  .report-pane.acc-row.active{ display:flex; flex-wrap:wrap; gap:10px; align-items:stretch; }
+  .acc-row > .acc{ display:contents; }
+  .acc-row .acc-btn{ order:1; flex:1 1 120px; width:auto; border:1px solid var(--hairline); border-radius:12px; background:var(--white); }
+  .acc-row .acc-body{ order:2; flex:0 0 100%; background:var(--white); border:1px solid var(--hairline); border-radius:12px; }
+  .acc-row > :not(.acc){ order:3; flex:0 0 100%; }
+
+  /* ফুটার */
+  .footer{ border-top:3px solid var(--orange); padding:18px 20px 14px; text-align:left; }
+  .footer-top{ max-width:1150px; margin:0 auto; display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; padding-bottom:12px; }
+  .footer-top .social-links{ margin:0; justify-content:flex-start; }
+  .footer-contact{ text-align:right; font-size:0.86rem; line-height:1.7; color:#0b0f1f; }
+  .footer-contact .ft-title{ font-weight:700; }
+  .footer-contact a{ color:inherit; text-decoration:none; }
+  .footer .footer-credit{ max-width:1150px; margin:0 auto; text-align:center; border-top:1px solid rgba(26,31,54,0.3); padding-top:12px; margin-top:0; line-height:1.7; }
+  @media(max-width:600px){
+    .footer-top{ flex-direction:column; align-items:center; }
+    .footer-contact{ text-align:center; }
+  }
+
+  /* কার্ড: দাম, তার নিচে Add to Cart | Buy Now */
+  .product-footer{ justify-content:flex-start; }
+  .card-actions{ display:flex; gap:6px; margin-top:6px; }
+  .card-actions button{ flex:1; min-width:0; white-space:nowrap; font-size:0.7rem; font-weight:700; padding:7px 4px; border-radius:6px; cursor:pointer; }
+  .card-actions .cart-btn{ background:var(--white); color:var(--orange); border:1.5px solid var(--orange); }
+  .card-actions .cart-btn:hover{ background:#FFF1E8; }
+  .card-actions .buy-btn{ padding:7px 4px; border:1.5px solid var(--orange); }
+
+  /* কার্ট */
+  .cart-icon-btn{ position:relative; background:none; border:none; color:var(--ink); padding:7px; border-radius:8px; display:flex; line-height:0; cursor:pointer; }
+  .cart-icon-btn:hover{ background:rgba(26,31,54,0.08); }
+  .cart-count{ position:absolute; top:-2px; right:-2px; background:var(--orange); color:#fff; border-radius:999px; font-size:0.62rem; font-weight:700; min-width:17px; height:17px; line-height:17px; text-align:center; padding:0 4px; }
+  .cart-line{ display:flex; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--hairline); flex-wrap:wrap; }
+  .cart-thumb{ width:46px; height:46px; border-radius:8px; background:var(--chip); overflow:hidden; flex:none; }
+  .cart-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .cart-info{ flex:1 1 120px; min-width:0; }
+  .cart-name{ font-weight:600; font-size:0.88rem; }
+  .cart-price{ font-size:0.78rem; color:var(--ink-soft); }
+  .cart-sub{ font-family:var(--font-mono); font-weight:700; font-size:0.85rem; min-width:70px; text-align:right; }
+  .cart-del{ background:none; border:none; color:var(--danger); font-size:1rem; padding:4px 6px; cursor:pointer; }
+  .cart-form .field{ margin-top:12px; }
 </style>
 </head>
 <body>
@@ -529,7 +578,7 @@
 <header class="site-header">
   <div class="header-inner">
     <div class="brand">
-      <span id="brandLogo" style="display:flex;"><svg width="38" height="38" viewBox="0 0 24 24" fill="none"><path d="M4 13C4 7 9 3 18 3C18 12 14 19 4 20C4 17 4 15 4 13Z" fill="#94A3B8"/><path d="M4 20C6 14 9 10 17 5" stroke="#0F1322" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+      <span id="brandLogo" style="display:flex;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M4 13C4 7 9 3 18 3C18 12 14 19 4 20C4 17 4 15 4 13Z" fill="#94A3B8"/><path d="M4 20C6 14 9 10 17 5" stroke="#0F1322" stroke-width="1.3" stroke-linecap="round"/></svg></span>
       <span id="brandName">ProyojonBD</span>
     </div>
     <nav class="navbar" id="navbar">
@@ -538,6 +587,10 @@
       <button class="nav-btn" data-section="report">Report</button>
     </nav>
     <div class="header-right">
+      <button class="cart-icon-btn" id="cartBtn" type="button" aria-label="কার্ট" title="কার্ট">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.4a2 2 0 002 1.6h8.1a2 2 0 002-1.5L21 8H6"/></svg>
+        <span class="cart-count" id="cartCount" style="display:none;">0</span>
+      </button>
       <div class="header-search-wrap" id="headerSearchWrap">
         <button class="header-search-icon" id="headerSearchIcon" aria-label="সার্চ">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -784,6 +837,8 @@
           <div class="acc-body">
         <div class="form-card">
           <div class="form-grid">
+            <div class="field"><label>Voucher No (অটো)</label><input type="text" id="expVoucher" readonly></div>
+            <div class="field"><label>Date</label><input type="date" id="expDate"></div>
             <div class="field"><label>ক্যাটাগরি</label>
               <select id="expCategory">
                 <option value="পণ্য ক্রয়">পণ্য ক্রয়</option>
@@ -811,7 +866,7 @@
       </div>
 
       <!-- ========== PRODUCTS (Product list / Purchase / Stock / Due Pay) ========== -->
-      <div class="report-pane" id="pane-inventory">
+      <div class="report-pane acc-row" id="pane-inventory">
 
         <!-- 1. Product List -->
         <div class="acc" data-acc="items">
@@ -933,7 +988,9 @@
             <div class="form-card">
               <div class="form-grid">
                 <div class="field"><label>Name</label><input type="text" id="wiName"></div>
-                <div class="field"><label>Mobile</label><input type="tel" id="wiMobile"></div>
+                <div class="field"><label>Mobile 1</label><input type="tel" id="wiMobile"></div>
+                <div class="field"><label>Mobile 2</label><input type="tel" id="wiMobile2"></div>
+                <div class="field"><label>Mobile 3</label><input type="tel" id="wiMobile3"></div>
                 <div class="field"><label>Email</label><input type="email" id="wiEmail"></div>
                 <div class="field"><label>Address</label><input type="text" id="wiAddress"></div>
                 <div class="field full">
@@ -1016,7 +1073,7 @@
       </div>
 
       <!-- ---------- INVEST ---------- -->
-      <div class="report-pane" id="pane-invest">
+      <div class="report-pane acc-row" id="pane-invest">
         <div class="acc" data-acc="invest">
           <button type="button" class="acc-btn" aria-expanded="false"><span>Invest</span><span class="chev">▾</span></button>
           <div class="acc-body">
@@ -1040,7 +1097,7 @@
       </div>
 
       <!-- ---------- CASH ---------- -->
-      <div class="report-pane" id="pane-cash">
+      <div class="report-pane acc-row" id="pane-cash">
         <div class="acc" data-acc="deposit">
           <button type="button" class="acc-btn" aria-expanded="false"><span>Deposit</span><span class="chev">▾</span></button>
           <div class="acc-body">
@@ -1156,21 +1213,11 @@
 </section>
 
 <footer class="footer">
-  <div class="footer-brand"><span id="footerLogo">🌿</span><span id="footerName">ProyojonBD</span></div>
-  <div style="font-size:0.9rem;font-weight:600;color:#0b0f1f;">আপনার দৈনন্দিন প্রয়োজন, এক ক্লিকে</div>
-  <div class="social-links" id="socialLinks">
-    <a class="social-link" href="https://web.facebook.com/abdul.momen.111408" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
-    </a>
-    <a class="social-link" href="http://www.youtube.com/@abdulmomen69" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.4a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58zM10 15.5v-7l6 3.5-6 3.5z"/></svg>
-    </a>
+  <div class="footer-top">
+    <div class="social-links" id="socialLinks"></div>
+    <div class="footer-contact" id="footerContact"></div>
   </div>
-  <div class="footer-credit" id="footerCredit">
-<strong>@AM Shahed</strong> &nbsp;|&nbsp; 📞 01605721296<br>
-    📍 ফেনী সদর, ফেনী জেলা, বাংলাদেশ<br>
-    © 2026 ProyojonBD — সকল অধিকার সংরক্ষিত
-  </div>
+  <div class="footer-credit" id="footerCredit"></div>
 </footer>
 
 <!-- ===================== BUY MODAL ===================== -->
@@ -1246,6 +1293,35 @@
     <div class="modal-actions">
       <button class="btn-secondary" id="cancelBuyBtn">বাতিল</button>
       <button class="btn-primary" id="confirmBuyBtn">অর্ডার কনফার্ম করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CART ===================== -->
+<div class="modal-scrim" id="cartScrim">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 style="margin-top:0;">🛒 আপনার কার্ট</h3>
+    <div id="cartItems"></div>
+    <div class="cart-form" id="cartForm">
+      <div class="field">
+        <label>ডেলিভারি এলাকা</label>
+        <div class="area-options">
+          <label class="area-option"><input type="radio" name="cartArea" value="Inside Feni" checked><span id="cartAreaInside">ফেনীর ভেতরে</span></label>
+          <label class="area-option"><input type="radio" name="cartArea" value="Outside Feni"><span id="cartAreaOutside">ফেনীর বাইরে</span></label>
+        </div>
+      </div>
+      <div class="field" id="cartNameField"><label for="cartName">আপনার নাম</label><input type="text" id="cartName" placeholder="যেমন: রহিম উদ্দিন"><div class="field-error">নাম লিখুন</div></div>
+      <div class="field" id="cartPhoneField"><label for="cartPhone">মোবাইল নম্বর</label><input type="tel" id="cartPhone" placeholder="01XXXXXXXXX"><div class="field-error">সঠিক মোবাইল নম্বর দিন</div></div>
+      <div class="field" id="cartAddressField"><label for="cartAddress">ডেলিভারি ঠিকানা</label><textarea id="cartAddress" rows="3" placeholder="বাড়ি, রোড, এলাকা, জেলা"></textarea><div class="field-error">ঠিকানা লিখুন</div></div>
+      <div class="price-breakdown" style="margin-top:14px;">
+        <div class="price-row"><span>পণ্যের মূল্য</span><span id="cartSubtotal">০ টাকা</span></div>
+        <div class="price-row"><span>ডেলিভারি চার্জ</span><span id="cartDelivery">০ টাকা</span></div>
+        <div class="price-row total"><span>সর্বমোট</span><span id="cartTotal">০ টাকা</span></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cartCloseBtn" type="button">বন্ধ করুন</button>
+      <button class="btn-primary" id="cartConfirmBtn" type="button">অর্ডার কনফার্ম করুন</button>
     </div>
   </div>
 </div>
@@ -1603,10 +1679,15 @@ function t(s){
 }
 function dateLocale(){ return LANG === 'en' ? 'en-GB' : 'bn-BD'; }
 function ask(msg){ return confirm(t(msg)); }
+// প্রিন্টের হেডার: লোগো ওয়েবসাইটের নামের বাম পাশে
+function printBrand(h){
+  const logo = SITE.logo ? `<img src="${esc(SITE.logo)}" style="height:${h}px;width:auto;">` : '';
+  return `<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 4px;">${logo}<h2 style="margin:0;">${esc(SITE.name)}</h2></div>`;
+}
 
 
 /* ---------- ওয়েবসাইট তথ্য (Settings → Web Info / Social) ---------- */
-const SITE_DEFAULT = { name:'ProyojonBD', address:'ফেনী সদর, ফেনী জেলা, বাংলাদেশ', mobile:'01605721296', email:'', logo:'' };
+const SITE_DEFAULT = { name:'ProyojonBD', address:'ফেনী সদর, ফেনী জেলা, বাংলাদেশ', mobile:'01605721296', mobile2:'', mobile3:'', email:'', logo:'' };
 const SOCIAL_DEFAULT = { facebook:'https://web.facebook.com/abdul.momen.111408', youtube:'http://www.youtube.com/@abdulmomen69', instagram:'', twitter:'', whatsapp:'' };
 let SITE = { ...SITE_DEFAULT };
 let SOCIAL = { ...SOCIAL_DEFAULT };
@@ -1633,24 +1714,26 @@ function safeSocialUrl(key, v){
   return 'https://' + v;
 }
 
+function siteMobiles(){
+  return [SITE.mobile, SITE.mobile2, SITE.mobile3].map(s=> String(s||'').trim()).filter(Boolean);
+}
 function applySiteInfo(){
   const name = SITE.name || SITE_DEFAULT.name;
-  document.getElementById('brandName').textContent  = name;
-  document.getElementById('footerName').textContent = name;
+  document.getElementById('brandName').textContent = name;
   document.querySelectorAll('.site-name-text').forEach(el=> el.textContent = name);
-  const logoImg = SITE.logo ? `<img class="brand-logo" src="${esc(SITE.logo)}" alt="${esc(name)}">` : '';
-  if (logoImg){
-    document.getElementById('brandLogo').innerHTML  = logoImg;
-    document.getElementById('footerLogo').innerHTML = logoImg;
+  if (SITE.logo){
+    document.getElementById('brandLogo').innerHTML = `<img class="brand-logo" src="${esc(SITE.logo)}" alt="${esc(name)}">`;
   } else {
-    document.getElementById('brandLogo').innerHTML  = '<svg width="38" height="38" viewBox="0 0 24 24" fill="none"><path d="M4 13C4 7 9 3 18 3C18 12 14 19 4 20C4 17 4 15 4 13Z" fill="#94A3B8"/><path d="M4 20C6 14 9 10 17 5" stroke="#0F1322" stroke-width="1.3" stroke-linecap="round"/></svg>';
-    document.getElementById('footerLogo').textContent = '🌿';
+    document.getElementById('brandLogo').innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M4 13C4 7 9 3 18 3C18 12 14 19 4 20C4 17 4 15 4 13Z" fill="#94A3B8"/><path d="M4 20C6 14 9 10 17 5" stroke="#0F1322" stroke-width="1.3" stroke-linecap="round"/></svg>';
   }
+  const phones = siteMobiles().map(n=> `<a href="tel:${esc(n.replace(/\s+/g,''))}">${esc(n)}</a>`).join(', ');
+  document.getElementById('footerContact').innerHTML =
+    `<div class="ft-title">যোগাযোগ:</div>` +
+    `<div><strong>${esc(name)}</strong>${phones ? ' &nbsp;|&nbsp; 📞 ' + phones : ''}</div>` +
+    (SITE.email ? `<div>✉️ <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a></div>` : '');
   document.getElementById('footerCredit').innerHTML =
-    `<strong>${esc(name)}</strong>${SITE.mobile ? ' &nbsp;|&nbsp; 📞 ' + esc(SITE.mobile) : ''}<br>` +
-    (SITE.address ? `📍 ${esc(SITE.address)}<br>` : '') +
-    (SITE.email ? `✉️ ${esc(SITE.email)}<br>` : '') +
-    `© ${new Date().getFullYear()} ${esc(name)} — সকল অধিকার সংরক্ষিত`;
+    (SITE.address ? `<div>📍 ${esc(SITE.address)}</div>` : '') +
+    `<div>© ${new Date().getFullYear()} ${esc(name)} — সকল অধিকার সংরক্ষিত</div>`;
 }
 
 function applySocialLinks(){
@@ -1678,7 +1761,7 @@ function applyDeliverySettings(s){
 function applySettings(s){
   if (!s) return;
   applyDeliverySettings(s);
-  const map = { webName:'name', webAddress:'address', webMobile:'mobile', webEmail:'email', webLogo:'logo' };
+  const map = { webName:'name', webAddress:'address', webMobile:'mobile', webMobile2:'mobile2', webMobile3:'mobile3', webEmail:'email', webLogo:'logo' };
   Object.keys(map).forEach(k=>{ if (s[k] !== undefined) SITE[map[k]] = String(s[k]); });
   Object.keys(SOCIAL_DEFAULT).forEach(k=>{ if (s[k] !== undefined) SOCIAL[k] = String(s[k]); });
   applySiteInfo();
@@ -1936,7 +2019,10 @@ function productCardHTML(p){
         ${descHtml}
         <div class="product-footer">
           ${priceHtml}
-          <button class="buy-btn" data-id="${esc(p.id)}" data-price="${finalPrice}">Buy Now</button>
+        </div>
+        <div class="card-actions">
+          <button class="cart-btn" type="button" data-id="${esc(p.id)}">Add to Cart</button>
+          <button class="buy-btn" type="button" data-id="${esc(p.id)}" data-price="${finalPrice}">Buy Now</button>
         </div>
       </div>
     </div>`;
@@ -2269,6 +2355,7 @@ document.getElementById('confirmBuyBtn').addEventListener('click', async ()=>{
   }
   lastOrderSnapshot = { order, result };
   document.getElementById('confirmOrderId').textContent = result.orderId || 'PRY-000000';
+  document.getElementById('confirmPrintBtn').style.display = '';
   document.getElementById('confirmScrim').classList.add('open');
 
   document.getElementById('custName').value = '';
@@ -2298,9 +2385,8 @@ document.getElementById('confirmPrintBtn').addEventListener('click', ()=>{
       .center{ text-align:center; font-size:12px; color:#62716B; margin-top:16px; }
     </style></head>
     <body>
-      ${SITE.logo ? `<div style="text-align:center;"><img src="${esc(SITE.logo)}" style="height:44px;"></div>` : ''}
-      <h2 style="text-align:center;margin:0 0 2px;">${esc(SITE.name)}</h2>
-      <div class="tag" style="text-align:center;">${esc(SITE.mobile)}${SITE.email ? ' | ' + esc(SITE.email) : ''}</div>
+      ${printBrand(44)}
+      <div class="tag" style="text-align:center;">${esc(siteMobiles().join(', '))}${SITE.email ? ' | ' + esc(SITE.email) : ''}</div>
       <div class="tag" style="text-align:center;">📍 ${esc(SITE.address)}</div>
       <div class="row"><span>অর্ডার আইডি</span><span>${result.orderId || ''}</span></div>
       <div class="row"><span>তারিখ</span><span>${date.toLocaleDateString(dateLocale())} ${date.toLocaleTimeString(dateLocale())}</span></div>
@@ -2316,7 +2402,7 @@ document.getElementById('confirmPrintBtn').addEventListener('click', ()=>{
       <div class="center">ডেলিভারি ঠিকানা: ${order.address}</div>
       <div class="center">ধন্যবাদ ${esc(SITE.name)}-র সাথে থাকার জন্য</div>
       <hr>
-      <div class="center" style="font-size:11px;">${esc(SITE.name)} &nbsp;|&nbsp; ${esc(SITE.mobile)}</div>
+      <div class="center" style="font-size:11px;">${esc(SITE.name)} &nbsp;|&nbsp; ${esc(siteMobiles().join(', '))}</div>
       <script>window.print();<\/script>
     </body></html>
   `);
@@ -2361,15 +2447,14 @@ function printTableWindow(title, theadHtml, tbodyHtml, tfootHtml){
       @media print{ body{ padding:8px; } }
     </style></head>
     <body>
-      ${SITE.logo ? `<div style="text-align:center;"><img src="${esc(SITE.logo)}" style="height:44px;"></div>` : ''}
-      <h2>${esc(SITE.name)}</h2>
+      ${printBrand(44)}
       <div class="meta">${title} — তারিখ: ${new Date().toLocaleDateString(dateLocale())}</div>
       <table>
         <thead>${theadHtml}</thead>
         <tbody>${tbodyHtml}</tbody>
         ${tfootHtml ? '<tfoot>'+tfootHtml+'</tfoot>' : ''}
       </table>
-      <div class="credit">${esc(SITE.name)} &nbsp;|&nbsp; ${esc(SITE.mobile)}${SITE.email ? ' &nbsp;|&nbsp; ' + esc(SITE.email) : ''}<br>📍 ${esc(SITE.address)}</div>
+      <div class="credit">${esc(SITE.name)} &nbsp;|&nbsp; ${esc(siteMobiles().join(', '))}${SITE.email ? ' &nbsp;|&nbsp; ' + esc(SITE.email) : ''}<br>📍 ${esc(SITE.address)}</div>
       <script>window.print();<\/script>
     </body></html>
   `);
@@ -2798,12 +2883,21 @@ document.getElementById('ordersPrintBtn').addEventListener('click', ()=>{
 
 /* ===================== EXPENSE ===================== */
 let _currentExpenses = [];
+function expDateStr(e){ return e.date ? dmy(e.date) : (e.timestamp ? new Date(e.timestamp).toLocaleDateString(dateLocale()) : ''); }
+function updateExpVoucher(){
+  let max = 0;
+  _currentExpenses.forEach(e=>{ const m = String(e.voucherNo||'').match(/(\d+)\s*$/); if (m) max = Math.max(max, parseInt(m[1],10)); });
+  document.getElementById('expVoucher').value = 'V-' + String(max + 1).padStart(4,'0');
+}
+document.getElementById('expDate').value = todayStr();
+updateExpVoucher();
 
 document.getElementById('expSaveBtn').addEventListener('click', async ()=>{
   const amount = document.getElementById('expAmount').value;
   if (!amount){ showToast('পরিমাণ লিখুন'); return; }
   const expense = {
     category: document.getElementById('expCategory').value,
+    date: document.getElementById('expDate').value || todayStr(),
     amount: Number(amount),
     description: document.getElementById('expDesc').value
   };
@@ -2829,6 +2923,7 @@ async function loadExpenseReport(){
   try{
     const data = await apiGet('action=expenses');
     _currentExpenses = data.expenses || [];
+    updateExpVoucher();
     renderExpenseTable();
   }catch(err){
     wrap.innerHTML = `<div class="empty-state">ব্যয় রিপোর্ট লোড করা যায়নি</div>`;
@@ -2842,13 +2937,13 @@ function renderExpenseTable(){
   const total = _currentExpenses.reduce((s,e)=>s+(Number(e.amount)||0),0);
   wrap.innerHTML = `
     <table class="data-table">
-      <thead><tr><th>তারিখ</th><th>ক্যাটাগরি</th><th>বিবরণ</th><th>পরিমাণ</th></tr></thead>
+      <thead><tr><th>Voucher No</th><th>তারিখ</th><th>ক্যাটাগরি</th><th>বিবরণ</th><th>পরিমাণ</th></tr></thead>
       <tbody>
         ${_currentExpenses.map(e=>`
-          <tr><td>${e.timestamp?new Date(e.timestamp).toLocaleDateString(dateLocale()):''}</td><td>${e.category||''}</td><td>${e.description||''}</td><td>${money(e.amount)}</td></tr>
+          <tr><td>${esc(e.voucherNo||'')}</td><td>${expDateStr(e)}</td><td>${e.category||''}</td><td>${e.description||''}</td><td>${money(e.amount)}</td></tr>
         `).join('')}
       </tbody>
-      <tfoot><tr><td colspan="3">সর্বমোট</td><td>${money(total)}</td></tr></tfoot>
+      <tfoot><tr><td colspan="4">সর্বমোট</td><td>${money(total)}</td></tr></tfoot>
     </table>`;
   window._expenseTotal = total;
 }
@@ -2856,9 +2951,9 @@ function renderExpenseTable(){
 document.getElementById('expenseRefreshBtn').addEventListener('click', loadExpenseReport);
 document.getElementById('expensePrintBtn').addEventListener('click', ()=>{
   printTableWindow('ব্যয় রিপোর্ট',
-    '<tr><th>তারিখ</th><th>ক্যাটাগরি</th><th>বিবরণ</th><th>পরিমাণ</th></tr>',
-    _currentExpenses.map(e=>`<tr><td>${e.timestamp?new Date(e.timestamp).toLocaleDateString(dateLocale()):''}</td><td>${e.category||''}</td><td>${e.description||''}</td><td>${e.amount||0} টাকা</td></tr>`).join(''),
-    `<tr><td colspan="3">সর্বমোট</td><td>${window._expenseTotal||0} টাকা</td></tr>`
+    '<tr><th>Voucher No</th><th>তারিখ</th><th>ক্যাটাগরি</th><th>বিবরণ</th><th>পরিমাণ</th></tr>',
+    _currentExpenses.map(e=>`<tr><td>${esc(e.voucherNo||'')}</td><td>${expDateStr(e)}</td><td>${e.category||''}</td><td>${e.description||''}</td><td>${e.amount||0} টাকা</td></tr>`).join(''),
+    `<tr><td colspan="4">সর্বমোট</td><td>${window._expenseTotal||0} টাকা</td></tr>`
   );
 });
 
@@ -3265,9 +3360,8 @@ function printPurchaseInvoice(p){
       .sign{ display:flex; justify-content:space-between; margin-top:70px; font-size:13px; }
       .sign div{ width:200px; text-align:center; border-top:1px solid #333; padding-top:6px; }
     </style></head><body>
-    ${SITE.logo ? `<div style="text-align:center;"><img src="${esc(SITE.logo)}" style="height:48px;"></div>` : ''}
-    <h2>${esc(SITE.name)}</h2>
-    <div class="c">${esc(SITE.address)}${SITE.mobile ? ' | ' + esc(SITE.mobile) : ''}${SITE.email ? ' | ' + esc(SITE.email) : ''}</div>
+    ${printBrand(44)}
+    <div class="c">${esc(SITE.address)}${SITE.mobile ? ' | ' + esc(siteMobiles().join(', ')) : ''}${SITE.email ? ' | ' + esc(SITE.email) : ''}</div>
     <div class="ttl">PURCHASE INVOICE</div>
     <div class="meta">
       <div><b>Company:</b> ${esc(p.company)}<br><b>Mobile:</b> ${esc(p.mobile)}<br><b>Address:</b> ${esc(p.address)}</div>
@@ -3441,6 +3535,8 @@ async function fillWebInfoForm(){
   const apply = ()=>{
     document.getElementById('wiName').value    = SITE.name;
     document.getElementById('wiMobile').value  = SITE.mobile;
+    document.getElementById('wiMobile2').value = SITE.mobile2;
+    document.getElementById('wiMobile3').value = SITE.mobile3;
     document.getElementById('wiEmail').value   = SITE.email;
     document.getElementById('wiAddress').value = SITE.address;
     setLogoPreview(SITE.logo);
@@ -3485,6 +3581,8 @@ document.getElementById('wiSaveBtn').addEventListener('click', ()=>{
   saveSettingsPartial({
     webName:name,
     webMobile:document.getElementById('wiMobile').value.trim(),
+    webMobile2:document.getElementById('wiMobile2').value.trim(),
+    webMobile3:document.getElementById('wiMobile3').value.trim(),
     webEmail:document.getElementById('wiEmail').value.trim(),
     webAddress:document.getElementById('wiAddress').value.trim(),
     webLogo:document.getElementById('wiLogo').value
@@ -3802,11 +3900,9 @@ function printReportDoc(title, periodLabel, bodyHtml){
       .credit{ text-align:center; margin-top:18px; font-size:11px; color:#6B7280; border-top:1px dashed #ccc; padding-top:10px; }
     </style></head>
     <body>
-      ${SITE.logo ? `<div style="text-align:center;"><img src="${esc(SITE.logo)}" style="height:44px;"></div>` : ''}
-      <h2>${esc(SITE.name)}</h2>
+      ${printBrand(44)}
       <div class="meta">${title} — ${periodLabel}</div>
       ${bodyHtml}
-      <div class="credit">${esc(SITE.name)} &nbsp;|&nbsp; ${esc(SITE.mobile)}${SITE.email ? ' &nbsp;|&nbsp; ' + esc(SITE.email) : ''}<br>📍 ${esc(SITE.address)}</div>
       <script>window.print();<\/script>
     </body></html>`);
   win.document.close();
@@ -3833,7 +3929,7 @@ function renderReport(){
   const r = periodRange(RPT.kind, RPT.date);
   const invests  = sortDateDesc(RPT_DATA.invests.filter(x=> inRange(x.date, r)));
   const orders   = RPT_DATA.orders.filter(o=> o.status !== 'Cancel' && inRange(o.timestamp, r));
-  const expenses = RPT_DATA.expenses.filter(x=> inRange(x.timestamp, r));
+  const expenses = RPT_DATA.expenses.filter(x=> inRange(x.date || x.timestamp, r));
 
   const secMap = {};
   orders.forEach(o=>{
@@ -3860,15 +3956,15 @@ function renderReport(){
     ${tblHtml(['খাত','অর্ডার সংখ্যা','আয়'], secRows, `<tr><td>সর্বমোট</td><td>${orders.length}</td><td>${money(income)}</td></tr>`)}
 
     <h3 class="rpt-h">Expenses</h3>
-    ${tblHtml(['তারিখ','ক্যাটাগরি','বিবরণ','পরিমাণ'],
-      expenses.map(x=>`<tr><td>${dmy(toYmd(x.timestamp))}</td><td>${esc(x.category)}</td><td>${esc(x.description)}</td><td>${money(x.amount)}</td></tr>`),
-      `<tr><td colspan="3">সর্বমোট</td><td>${money(expense)}</td></tr>`)}
+    ${tblHtml(['Voucher No','তারিখ','ক্যাটাগরি','বিবরণ','পরিমাণ'],
+      expenses.map(x=>`<tr><td>${esc(x.voucherNo||'')}</td><td>${dmy(toYmd(x.date || x.timestamp))}</td><td>${esc(x.category)}</td><td>${esc(x.description)}</td><td>${money(x.amount)}</td></tr>`),
+      `<tr><td colspan="4">সর্বমোট</td><td>${money(expense)}</td></tr>`)}
 
     <h3 class="rpt-h">Profit and Loss</h3>
     ${tblHtml(['বিষয়','পরিমাণ'], [`<tr><td>মোট আয়</td><td>${money(income)}</td></tr>`, `<tr><td>মোট ব্যয়</td><td>${money(expense)}</td></tr>`])}
-    ${plHtml}
-    <div class="rpt-note">আয় = বাতিল বাদে সব অর্ডারের মোট। Profit/Loss = আয় − ব্যয়। Invest মূলধন হিসেবে আলাদা দেখানো হয়েছে, Profit/Loss-এ ধরা হয়নি।</div>`;
-  body.innerHTML = `<div class="rpt-period">${PERIOD_LABELS[RPT.kind]} রিপোর্ট — ${r.label}</div>` + html;
+    ${plHtml}`;
+  body.innerHTML = `<div class="rpt-period">${PERIOD_LABELS[RPT.kind]} রিপোর্ট — ${r.label}</div>` + html +
+    '<div class="rpt-note">আয় = বাতিল বাদে সব অর্ডারের মোট। Profit/Loss = আয় − ব্যয়। Invest মূলধন হিসেবে আলাদা দেখানো হয়েছে, Profit/Loss-এ ধরা হয়নি।</div>';
   RPT._html = html; RPT._label = PERIOD_LABELS[RPT.kind] + ' — ' + r.label;
 }
 document.getElementById('rptRefreshBtn').addEventListener('click', loadReport);
@@ -4055,6 +4151,130 @@ Object.assign(ACC_HOOKS, {
   cashreport: ()=> loadCashReport()
 });
 document.querySelector('#reportSubnav button[data-pane="report"]').addEventListener('click', loadReport);
+
+
+/* ===================== CART ===================== */
+const CART_KEY = 'proyojonbd_cart_v1';
+let CART = [];
+try{ CART = JSON.parse(localStorage.getItem(CART_KEY)) || []; if (!Array.isArray(CART)) CART = []; }catch(e){ CART = []; }
+function saveCart(){
+  try{ localStorage.setItem(CART_KEY, JSON.stringify(CART)); }catch(e){}
+  const el = document.getElementById('cartCount');
+  el.textContent = CART.length; el.style.display = CART.length ? '' : 'none';
+}
+function cartFinalPrice(p){ const d = parseFloat(p.discount) || 0; return d > 0 ? Number(p.price) - d : Number(p.price); }
+function cartLines(){
+  return CART.map(c=>{
+    const p = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).find(x=> String(x.id) === String(c.id));
+    return p ? { p, qty:Number(c.qty)||1, price:cartFinalPrice(p) } : null;
+  }).filter(Boolean);
+}
+function addToCart(id){
+  const p = PRODUCTS.find(x=> String(x.id) === String(id));
+  if (!p) return;
+  const ex = CART.find(c=> String(c.id) === String(id));
+  if (ex) ex.qty = Math.round((Number(ex.qty) + (isKg(p) ? 0.5 : 1)) * 100) / 100;
+  else CART.push({ id:String(id), qty:1 });
+  saveCart();
+  showToast('কার্টে যোগ হয়েছে');
+}
+function cartArea(){ const c = document.querySelector('input[name="cartArea"]:checked'); return c ? c.value : 'Inside Feni'; }
+function renderCart(){
+  const lines = cartLines();
+  const box = document.getElementById('cartItems');
+  document.getElementById('cartAreaInside').textContent  = 'ফেনীর ভেতরে — ' + DELIVERY_CHARGES['Inside Feni'] + ' টাকা';
+  document.getElementById('cartAreaOutside').textContent = 'ফেনীর বাইরে — ' + DELIVERY_CHARGES['Outside Feni'] + ' টাকা';
+  document.getElementById('cartForm').style.display = lines.length ? '' : 'none';
+  document.getElementById('cartConfirmBtn').style.display = lines.length ? '' : 'none';
+  if (!lines.length){ box.innerHTML = '<div class="empty-state">কার্ট খালি</div>'; return; }
+  box.innerHTML = lines.map(l=>{
+    const img = (l.p.image || '').split(',')[0].trim();
+    return `<div class="cart-line" data-id="${esc(l.p.id)}">
+      <div class="cart-thumb">${img ? `<img src="${esc(img)}" alt="">` : ''}</div>
+      <div class="cart-info"><div class="cart-name">${esc(l.p.name)}</div><div class="cart-price">${money(l.price)}${unitSuffix(l.p)}</div></div>
+      <div class="qty-stepper"><button type="button" data-cart="dec" aria-label="কমান">−</button><span>${fmtQty(l.qty)}</span><button type="button" data-cart="inc" aria-label="বাড়ান">+</button></div>
+      <div class="cart-sub">${money(Math.round(l.price * l.qty * 100) / 100)}</div>
+      <button type="button" class="cart-del" data-cart="del" aria-label="সরান">✕</button>
+    </div>`;
+  }).join('');
+  updateCartTotals();
+}
+function updateCartTotals(){
+  const lines = cartLines();
+  const sub = Math.round(lines.reduce((s,l)=> s + l.price * l.qty, 0) * 100) / 100;
+  const dc = lines.length ? DELIVERY_CHARGES[cartArea()] : 0;
+  document.getElementById('cartSubtotal').textContent = money(sub);
+  document.getElementById('cartDelivery').textContent = money(dc);
+  document.getElementById('cartTotal').textContent = money(sub + dc);
+}
+function openCart(){ renderCart(); document.getElementById('cartScrim').classList.add('open'); }
+document.getElementById('cartBtn').addEventListener('click', openCart);
+document.getElementById('cartCloseBtn').addEventListener('click', ()=> document.getElementById('cartScrim').classList.remove('open'));
+document.querySelectorAll('input[name="cartArea"]').forEach(r=> r.addEventListener('change', updateCartTotals));
+document.addEventListener('click', e=>{
+  const b = e.target.closest('.cart-btn');
+  if (b){ e.stopPropagation(); addToCart(b.dataset.id); }
+});
+document.getElementById('cartItems').addEventListener('click', e=>{
+  const b = e.target.closest('button[data-cart]'); if (!b) return;
+  const id = b.closest('.cart-line').dataset.id;
+  const c = CART.find(x=> String(x.id) === String(id)); if (!c) return;
+  const p = PRODUCTS.find(x=> String(x.id) === String(id));
+  const step = p && isKg(p) ? 0.5 : 1, min = step;
+  if (b.dataset.cart === 'inc') c.qty = Math.round((Number(c.qty) + step) * 100) / 100;
+  else if (b.dataset.cart === 'dec'){ if (Number(c.qty) - step >= min) c.qty = Math.round((Number(c.qty) - step) * 100) / 100; }
+  else CART = CART.filter(x=> String(x.id) !== String(id));
+  saveCart(); renderCart();
+});
+document.getElementById('cartConfirmBtn').addEventListener('click', async ()=>{
+  const lines = cartLines();
+  if (!lines.length){ showToast('কার্ট খালি'); return; }
+  const name = document.getElementById('cartName').value;
+  const phone = document.getElementById('cartPhone').value;
+  const address = document.getElementById('cartAddress').value;
+  const okN = validateField('cartNameField', name), okP = validateField('cartPhoneField', phone), okA = validateField('cartAddressField', address);
+  if (!okN || !okP || !okA) return;
+
+  const area = cartArea();
+  const btn = document.getElementById('cartConfirmBtn');
+  btn.disabled = true; btn.textContent = 'অর্ডার হচ্ছে…';
+  const ids = [], doneProducts = [];
+  try{
+    for (const l of lines){
+      const kg = isKg(l.p);
+      const first = ids.length === 0;
+      const sub = Math.round(l.price * l.qty * 100) / 100;
+      const dc = first ? DELIVERY_CHARGES[area] : 0;
+      const order = {
+        customerName:name.trim(), phone:phone.trim(), address:address.trim(),
+        productName:l.p.name, category:l.p.category || '', quantity:l.qty, unit:kg ? 'KG' : 'PCS',
+        color:'', size:'', unitPrice:l.price, subtotal:sub, deliveryArea:area, deliveryCharge:dc, total:sub + dc,
+        noDelivery:!first
+      };
+      let result = { success:true, orderId:'PRY-' + Date.now() + '-' + ids.length };
+      if (API_URL){
+        result = await apiPost({ action:'order', order });
+        if (result && result.error) throw new Error(result.error);
+      }
+      ids.push(result.orderId); doneProducts.push(String(l.p.id));
+    }
+  }catch(err){
+    CART = CART.filter(c=> doneProducts.indexOf(String(c.id)) < 0);
+    saveCart(); renderCart();
+    showToast(ids.length ? 'কিছু অর্ডার পাঠানো যায়নি, বাকি পণ্য আবার চেষ্টা করুন' : 'অর্ডার পাঠানো যায়নি');
+    btn.disabled = false; btn.textContent = 'অর্ডার কনফার্ম করুন';
+    return;
+  }
+  btn.disabled = false; btn.textContent = 'অর্ডার কনফার্ম করুন';
+  CART = []; saveCart();
+  document.getElementById('cartScrim').classList.remove('open');
+  ['cartName','cartPhone','cartAddress'].forEach(i=> document.getElementById(i).value = '');
+  lastOrderSnapshot = null;
+  document.getElementById('confirmOrderId').textContent = ids.join(', ');
+  document.getElementById('confirmPrintBtn').style.display = 'none';
+  document.getElementById('confirmScrim').classList.add('open');
+});
+saveCart();
 
 // Init — পণ্য সবার আগে (ক্যাশ থেকে তাৎক্ষণিক), বাকিগুলো পরে
 loadProducts();
