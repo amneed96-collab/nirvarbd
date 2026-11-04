@@ -12,7 +12,10 @@ var SHEET_SCHEMAS = {
   'Items':    ['itemId','name','brand','createdAt'],
   'Purchases':['invoiceNo','date','company','mobile','address','itemsJson','total','discount','payable','paid','due','authority','buyer','createdAt'],
   'Payments': ['paymentId','invoiceNo','date','amount','note','createdAt'],
-  'Admins':   ['adminId','name','designation','mobile','email','passwordHash','salt','createdAt']
+  'Admins':   ['adminId','name','designation','mobile','email','passwordHash','salt','createdAt'],
+  'Invests':  ['id','date','name','mobile','address','amount','createdAt'],
+  'Deposits': ['id','date','description','amount','person','createdAt'],
+  'Withdrawals': ['id','date','description','amount','person','createdAt']
 };
 
 var DEFAULT_SETTINGS = { deliveryInside: 60, deliveryOutside: 150 };
@@ -118,6 +121,9 @@ function doGet(e) {
   if (action === 'orders')   return jsonResponse(getOrders(e.parameter.status));
   if (action === 'expenses') return jsonResponse(getExpenses());
   if (action === 'about')    return jsonResponse(getAbout());
+  if (action === 'invests')     return jsonResponse(getInvests());
+  if (action === 'deposits')    return jsonResponse(getDeposits());
+  if (action === 'withdrawals') return jsonResponse(getWithdrawals());
   return jsonResponse({ error: 'Unknown action' });
 }
 
@@ -143,6 +149,15 @@ function doPost(e) {
     case 'updateAdmin':       return jsonResponse(updateAdmin(body.admin));
     case 'deleteAdmin':       return jsonResponse(deleteAdmin(body.adminId));
     case 'adminLogin':        return jsonResponse(adminLogin(body.identifier, body.password));
+    case 'addInvest':         return jsonResponse(addInvest(body.record));
+    case 'updateInvest':      return jsonResponse(updateInvest(body.record));
+    case 'deleteInvest':      return jsonResponse(deleteRecord('Invests', body.id));
+    case 'addDeposit':        return jsonResponse(addCashRecord('Deposits', 'DEP-', body.record));
+    case 'updateDeposit':     return jsonResponse(updateCashRecord('Deposits', body.record));
+    case 'deleteDeposit':     return jsonResponse(deleteRecord('Deposits', body.id));
+    case 'addWithdrawal':     return jsonResponse(addCashRecord('Withdrawals', 'WDR-', body.record));
+    case 'updateWithdrawal':  return jsonResponse(updateCashRecord('Withdrawals', body.record));
+    case 'deleteWithdrawal':  return jsonResponse(deleteRecord('Withdrawals', body.id));
     default:                  return jsonResponse({ error: 'Unknown action' });
   }
 }
@@ -811,4 +826,108 @@ function adminLogin(identifier, password) {
   }
   cache.put(key, String(fails + 1), 900);
   return { error: 'মোবাইল/ইমেইল বা পাসওয়ার্ড ভুল' };
+}
+
+
+/* ======== INVEST / CASH (Deposit, Withdrawal) ======== */
+
+function validYmd(d) { return /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')) ? String(d) : todayStr(); }
+
+function getInvests() {
+  var sheet = ensureSheet('Invests');
+  return { invests: rowsToObjects(sheet.getDataRange().getValues()).map(function(o) {
+    return { id: String(o.id), date: fmtDate(o.date), name: String(o.name || ''), mobile: String(o.mobile || ''),
+             address: String(o.address || ''), amount: Number(o.amount) || 0 };
+  }).reverse() };
+}
+
+function addInvest(r) {
+  if (!r || !String(r.name || '').trim()) return { error: 'Name দিন' };
+  var amt = r2(r.amount);
+  if (!(amt > 0)) return { error: 'সঠিক Amount দিন' };
+  var sheet = ensureSheet('Invests');
+  var id = 'INV-' + new Date().getTime();
+  appendRowText(sheet, getHeaders(sheet), {
+    'id': id, 'date': validYmd(r.date), 'name': String(r.name).trim(), 'mobile': String(r.mobile || '').trim(),
+    'address': String(r.address || '').trim(), 'amount': amt, 'createdat': new Date()
+  }, ['date', 'mobile']);
+  return { success: true, id: id };
+}
+
+function updateInvest(r) {
+  if (!r || !r.id) return { error: 'id দরকার' };
+  if (!String(r.name || '').trim()) return { error: 'Name দিন' };
+  var amt = r2(r.amount);
+  if (!(amt > 0)) return { error: 'সঠিক Amount দিন' };
+  return updateRecordRow('Invests', r.id, {
+    'date': validYmd(r.date), 'name': String(r.name).trim(), 'mobile': String(r.mobile || '').trim(),
+    'address': String(r.address || '').trim(), 'amount': amt
+  }, ['date', 'mobile']);
+}
+
+function cashList(sheetName, key) {
+  var sheet = ensureSheet(sheetName);
+  var out = {};
+  out[key] = rowsToObjects(sheet.getDataRange().getValues()).map(function(o) {
+    return { id: String(o.id), date: fmtDate(o.date), description: String(o.description || ''),
+             amount: Number(o.amount) || 0, person: String(o.person || '') };
+  }).reverse();
+  return out;
+}
+function getDeposits()    { return cashList('Deposits', 'deposits'); }
+function getWithdrawals() { return cashList('Withdrawals', 'withdrawals'); }
+
+function addCashRecord(sheetName, prefix, r) {
+  if (!r) return { error: 'তথ্য অসম্পূর্ণ' };
+  var amt = r2(r.amount);
+  if (!(amt > 0)) return { error: 'সঠিক Amount দিন' };
+  if (!String(r.person || '').trim()) return { error: 'নাম দিন' };
+  var sheet = ensureSheet(sheetName);
+  var id = prefix + new Date().getTime();
+  appendRowText(sheet, getHeaders(sheet), {
+    'id': id, 'date': validYmd(r.date), 'description': String(r.description || '').trim().slice(0, 300),
+    'amount': amt, 'person': String(r.person).trim(), 'createdat': new Date()
+  }, ['date']);
+  return { success: true, id: id };
+}
+
+function updateCashRecord(sheetName, r) {
+  if (!r || !r.id) return { error: 'id দরকার' };
+  var amt = r2(r.amount);
+  if (!(amt > 0)) return { error: 'সঠিক Amount দিন' };
+  if (!String(r.person || '').trim()) return { error: 'নাম দিন' };
+  return updateRecordRow(sheetName, r.id, {
+    'date': validYmd(r.date), 'description': String(r.description || '').trim().slice(0, 300),
+    'amount': amt, 'person': String(r.person).trim()
+  }, ['date']);
+}
+
+// সাধারণ আপডেট: id মিলিয়ে নির্দিষ্ট কলামগুলো বদলায়
+function updateRecordRow(sheetName, id, map, textKeys) {
+  var sheet = ensureSheet(sheetName);
+  var rows  = sheet.getDataRange().getValues();
+  var idC   = colIndex(sheet, 'id');
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idC]) !== String(id)) continue;
+    Object.keys(map).forEach(function(k) {
+      var c = colIndex(sheet, k);
+      if (c < 0) return;
+      var cell = sheet.getRange(i + 1, c + 1);
+      if (textKeys.indexOf(k) >= 0) cell.setNumberFormat('@');
+      cell.setValue(map[k]);
+    });
+    return { success: true };
+  }
+  return { error: 'রেকর্ড পাওয়া যায়নি' };
+}
+
+function deleteRecord(sheetName, id) {
+  if (!id) return { error: 'id দরকার' };
+  var sheet = ensureSheet(sheetName);
+  var rows  = sheet.getDataRange().getValues();
+  var idC   = colIndex(sheet, 'id');
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idC]) === String(id)) { sheet.deleteRow(i + 1); return { success: true }; }
+  }
+  return { error: 'রেকর্ড পাওয়া যায়নি' };
 }
