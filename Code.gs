@@ -136,6 +136,7 @@ function doPost(e) {
     case 'updateOrderStatus': return jsonResponse(updateOrderStatus(body.orderId, body.status));
     case 'addProduct':        return jsonResponse(addProduct(body.product));
     case 'updateProduct':     return jsonResponse(updateProduct(body.product));
+    case 'deleteProduct':     return jsonResponse(deleteProduct(body.id));
     case 'addExpense':        return jsonResponse(addExpense(body.expense));
     case 'updateExpense':     return jsonResponse(updateExpense(body.expense));
     case 'deleteExpense':     return jsonResponse(deleteExpense(body.id));
@@ -145,6 +146,8 @@ function doPost(e) {
     case 'updateItem':        return jsonResponse(updateItem(body.item));
     case 'deleteItem':        return jsonResponse(deleteItem(body.itemId));
     case 'savePurchase':      return jsonResponse(savePurchase(body.purchase));
+    case 'updatePurchase':    return jsonResponse(updatePurchase(body.invoiceNo, body.purchase));
+    case 'deletePurchase':    return jsonResponse(deletePurchase(body.invoiceNo));
     case 'payDue':            return jsonResponse(payDue(body.invoiceNo, body.amount, body.date, body.note));
     case 'listAdmins':        return jsonResponse(listAdmins());
     case 'addAdmin':          return jsonResponse(addAdmin(body.admin));
@@ -250,7 +253,7 @@ function addProduct(p) {
     'discount': Number(p.discount) || 0,
     'stock':    (p.stock===undefined||p.stock==='') ? '' : Number(p.stock),
     'image':    p.image    || '',
-    'status':   'Active',
+    'status':   (String(p.status || '').trim() === 'Deactive') ? 'Deactive' : 'Active',
     'colors':   normalizeUnit(p.unit) === 'PCS' ? cleanList(p.colors) : '',
     'sizes':    normalizeUnit(p.unit) === 'PCS' ? cleanList(p.sizes)  : ''
   }));
@@ -288,6 +291,21 @@ function updateProduct(p) {
     }
     clearProductsCache();
     return { success:true };
+  }
+  return { error: 'পণ্য পাওয়া যায়নি' };
+}
+
+function deleteProduct(id) {
+  if (!id) return { error: 'id প্রয়োজন' };
+  var sheet = ensureSheet('Products');
+  var rows  = sheet.getDataRange().getValues();
+  var idC   = colIndex(sheet, 'id');
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][idC]) === String(id)) {
+      sheet.deleteRow(i + 1);
+      clearProductsCache();
+      return { success: true };
+    }
   }
   return { error: 'পণ্য পাওয়া যায়নি' };
 }
@@ -736,6 +754,88 @@ function savePurchase(p) {
   } };
 }
 
+// Purchase এডিট: Invoice নম্বর ঠিক থাকে, বাকি তথ্য নতুন করে হিসাব হয়ে শীটে বসে
+function updatePurchase(invoiceNo, p) {
+  if (!invoiceNo || !p) return { error: 'তথ্য অসম্পূর্ণ' };
+  var company = String(p.company || '').trim();
+  if (!company) return { error: 'Company Name দিন' };
+
+  var items = (p.items || []).map(function(it) {
+    var qty = Number(it.qty) || 0, price = Number(it.price) || 0;
+    return {
+      name: String(it.name || '').trim(), brand: String(it.brand || '').trim(),
+      unit: normalizeUnit(it.unit),
+      colour: String(it.colour || '').trim(), size: String(it.size || '').trim(),
+      price: r2(price), qty: qty, amount: r2(price * qty)
+    };
+  }).filter(function(it) { return it.name && it.qty > 0; });
+  if (!items.length) return { error: 'কমপক্ষে একটি পণ্য যোগ করুন' };
+
+  var total    = r2(items.reduce(function(a, it) { return a + it.amount; }, 0));
+  var discount = r2(Math.min(Math.max(Number(p.discount) || 0, 0), total));
+  var payable  = r2(total - discount);
+  var paid     = r2(Math.max(Number(p.paid) || 0, 0));
+  if (paid > payable) return { error: 'Paid, Payable এর চেয়ে বেশি হতে পারবে না' };
+  var due  = r2(payable - paid);
+  var date = /^\d{4}-\d{2}-\d{2}$/.test(String(p.date || '')) ? String(p.date) : todayStr();
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Purchases');
+    var rows  = sheet.getDataRange().getValues();
+    var iC = colIndex(sheet, 'invoiceNo');
+    var vals = {
+      'date': date, 'company': company,
+      'mobile': String(p.mobile || '').trim(), 'address': String(p.address || '').trim(),
+      'itemsjson': JSON.stringify(items),
+      'total': total, 'discount': discount, 'payable': payable, 'paid': paid, 'due': due,
+      'authority': String(p.authority || '').trim(), 'buyer': String(p.buyer || '').trim()
+    };
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][iC]) !== String(invoiceNo)) continue;
+      Object.keys(vals).forEach(function(k) {
+        var c = colIndex(sheet, k);
+        if (c < 0) return;
+        var cell = sheet.getRange(i + 1, c + 1);
+        if (k === 'date' || k === 'mobile') cell.setNumberFormat('@');
+        cell.setValue(vals[k]);
+      });
+      return { success: true, purchase: {
+        invoiceNo: String(invoiceNo), date: date, company: company,
+        mobile: vals.mobile, address: vals.address, items: items,
+        total: total, discount: discount, payable: payable, paid: paid, due: due,
+        authority: vals.authority, buyer: vals.buyer
+      } };
+    }
+    return { error: 'Invoice পাওয়া যায়নি' };
+  } finally { lock.releaseLock(); }
+}
+
+// Purchase ডিলেট: Invoice এর সব Payment রেকর্ডসহ মুছে যায়
+function deletePurchase(invoiceNo) {
+  if (!invoiceNo) return { error: 'Invoice দরকার' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Purchases');
+    var rows  = sheet.getDataRange().getValues();
+    var iC = colIndex(sheet, 'invoiceNo');
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][iC]) !== String(invoiceNo)) continue;
+      sheet.deleteRow(i + 1);
+      var pSheet = ensureSheet('Payments');
+      var pRows  = pSheet.getDataRange().getValues();
+      var pC = colIndex(pSheet, 'invoiceNo');
+      for (var j = pRows.length - 1; j >= 1; j--) {
+        if (String(pRows[j][pC]) === String(invoiceNo)) pSheet.deleteRow(j + 1);
+      }
+      return { success: true };
+    }
+    return { error: 'Invoice পাওয়া যায়নি' };
+  } finally { lock.releaseLock(); }
+}
+
 /* ======== DUE PAY ======== */
 
 function payDue(invoiceNo, amount, date, note) {
@@ -772,7 +872,7 @@ function payDue(invoiceNo, amount, date, note) {
   } finally { lock.releaseLock(); }
 }
 
-/* ======== STOCK (ক্রয় − বিক্রয়, পণ্যের নাম মিলিয়ে) ======== */
+/* ======== STOCK (Purchase − Delivery সম্পন্ন অর্ডার, পণ্যের নাম মিলিয়ে) ======== */
 
 function getStock() {
   var pSheet = ensureSheet('Purchases');
@@ -782,8 +882,9 @@ function getStock() {
   var orders = rowsToObjects(oSheet.getDataRange().getValues());
   var soldByName = {};
   orders.forEach(function(o) {
+    // শুধু ডেলিভারি সম্পন্ন অর্ডারে স্টক কমবে (Pending / Cancel ধরা হবে না)
     var st = String(o.status || 'Pending').trim().toLowerCase();
-    if (st === 'cancel') return;
+    if (st !== 'delivery' && st !== 'delivered') return;
     var k = String(o.productname || '').trim().toLowerCase();
     if (!k) return;
     soldByName[k] = (soldByName[k] || 0) + (Number(o.quantity) || 0);
@@ -812,7 +913,7 @@ function getStock() {
   var detList = Object.keys(details).map(function(k) { return details[k]; })
     .sort(function(a, b) { return a.product.localeCompare(b.product); });
 
-  return { products: prodList, details: detList };
+  return { products: prodList, details: detList, sold: soldByName };
 }
 
 /* ======== ADMINISTRATION (ব্যবস্থাপক) ======== */
