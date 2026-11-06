@@ -4,22 +4,22 @@
  */
 
 var SHEET_SCHEMAS = {
-  'Products': ['id','name','category','unit','desc','price','discount','stock','image','status'],
+  'Products': ['id','name','category','unit','desc','price','discount','stock','image','status','colors','sizes'],
   'Orders':   ['orderId','timestamp','customerName','phone','productName','category','deliveryArea','address','quantity','unit','color','size','unitPrice','subtotal','deliveryCharge','total','status'],
   'Expenses': ['expenseId','timestamp','category','description','amount','voucherNo','date'],
   'About':    ['key','value','updatedAt'],
   'Settings': ['key','value','updatedAt'],
-  'Items':    ['itemId','name','brand','createdAt'],
+  'Items':    ['itemId','name','brand','createdAt','unit','colors','sizes'],
   'Purchases':['invoiceNo','date','company','mobile','address','itemsJson','total','discount','payable','paid','due','authority','buyer','createdAt'],
   'Payments': ['paymentId','invoiceNo','date','amount','note','createdAt'],
-  'Admins':   ['adminId','name','designation','mobile','email','passwordHash','salt','createdAt'],
+  'Admins':   ['adminId','name','designation','mobile','email','passwordHash','salt','createdAt','password'],
   'Invests':  ['id','date','name','mobile','address','amount','createdAt'],
   'Deposits': ['id','date','description','amount','person','createdAt'],
   'Withdrawals': ['id','date','description','amount','person','createdAt']
 };
 
 var DEFAULT_SETTINGS = { deliveryInside: 60, deliveryOutside: 150 };
-var PRODUCTS_CACHE_KEY = 'products_v2';
+var PRODUCTS_CACHE_KEY = 'products_v3';
 var SETTINGS_CACHE_KEY = 'settings_v2';
 var TZ = 'Asia/Dhaka';
 
@@ -151,6 +151,9 @@ function doPost(e) {
     case 'updateAdmin':       return jsonResponse(updateAdmin(body.admin));
     case 'deleteAdmin':       return jsonResponse(deleteAdmin(body.adminId));
     case 'adminLogin':        return jsonResponse(adminLogin(body.identifier, body.password));
+    case 'listAdminNames':    return jsonResponse(listAdminNames());
+    case 'sendRecoveryPin':   return jsonResponse(sendRecoveryPin(body.adminId, body.mobile));
+    case 'verifyRecoveryPin': return jsonResponse(verifyRecoveryPin(body.adminId, body.pin));
     case 'addInvest':         return jsonResponse(addInvest(body.record));
     case 'updateInvest':      return jsonResponse(updateInvest(body.record));
     case 'deleteInvest':      return jsonResponse(deleteRecord('Invests', body.id));
@@ -166,7 +169,31 @@ function doPost(e) {
 
 /* ======== PRODUCTS ======== */
 
-function normalizeUnit(u) { return String(u || '').trim().toUpperCase() === 'KG' ? 'KG' : 'PCS'; }
+var VALID_UNITS = ['PCS', 'KG', 'LITER', 'GRAM'];
+function normalizeUnit(u) {
+  var x = String(u || '').trim().toUpperCase();
+  if (x === 'LITRE' || x === 'L') x = 'LITER';
+  if (x === 'G' || x === 'GM') x = 'GRAM';
+  return VALID_UNITS.indexOf(x) >= 0 ? x : 'PCS';
+}
+
+// "Red, Blue ,Black" → "Red, Blue, Black" (ফাঁকা/ডুপ্লিকেট বাদ)
+function cleanList(v) {
+  var seen = {}, out = [];
+  String(v || '').split(/[,\n]/).forEach(function(s) {
+    s = s.trim();
+    var k = s.toLowerCase();
+    if (s && !seen[k]) { seen[k] = true; out.push(s.slice(0, 40)); }
+  });
+  return out.join(', ').slice(0, 500);
+}
+
+// পণ্যের Color/Size: পণ্যে নিজে দেওয়া থাকলে সেটা, নাহলে Items (Products List) থেকে নামের মিলে
+function productOpts(o, itemOpts) {
+  if (normalizeUnit(o.unit) !== 'PCS') return { colors: '', sizes: '' };
+  var fb = itemOpts[String(o.name || '').trim().toLowerCase()] || {};
+  return { colors: cleanList(o.colors) || fb.colors || '', sizes: cleanList(o.sizes) || fb.sizes || '' };
+}
 
 function clearProductsCache() {
   try { CacheService.getScriptCache().remove(PRODUCTS_CACHE_KEY); } catch (e) {}
@@ -181,8 +208,13 @@ function getProducts() {
 
   var sheet = ensureSheet('Products');
   var rows  = sheet.getDataRange().getValues();
+  var itemOpts = {};
+  rowsToObjects(ensureSheet('Items').getDataRange().getValues()).forEach(function(it) {
+    itemOpts[String(it.name || '').trim().toLowerCase()] = { colors: cleanList(it.colors), sizes: cleanList(it.sizes) };
+  });
   var result = {
     products: rowsToObjects(rows).map(function(o){
+      var opt = productOpts(o, itemOpts);
       return {
         id:       String(o.id),
         name:     o.name       || '',
@@ -193,7 +225,9 @@ function getProducts() {
         discount: Number(o.discount) || 0,
         stock:    (o.stock===''||o.stock===undefined) ? null : Number(o.stock),
         image:    o.image      || '',
-        status:   o.status ? String(o.status).trim() : 'Active'
+        status:   o.status ? String(o.status).trim() : 'Active',
+        colors:   opt.colors,
+        sizes:    opt.sizes
       };
     })
   };
@@ -216,7 +250,9 @@ function addProduct(p) {
     'discount': Number(p.discount) || 0,
     'stock':    (p.stock===undefined||p.stock==='') ? '' : Number(p.stock),
     'image':    p.image    || '',
-    'status':   'Active'
+    'status':   'Active',
+    'colors':   normalizeUnit(p.unit) === 'PCS' ? cleanList(p.colors) : '',
+    'sizes':    normalizeUnit(p.unit) === 'PCS' ? cleanList(p.sizes)  : ''
   }));
   clearProductsCache();
   return { success:true, id:id };
@@ -245,6 +281,11 @@ function updateProduct(p) {
     if (p.stock    !== undefined) set('stock',    p.stock==='' ? '' : Number(p.stock));
     set('image',  p.image);
     set('status', p.status);
+    if (p.unit !== undefined && normalizeUnit(p.unit) !== 'PCS') { set('colors', ''); set('sizes', ''); }
+    else {
+      if (p.colors !== undefined) set('colors', cleanList(p.colors));
+      if (p.sizes  !== undefined) set('sizes',  cleanList(p.sizes));
+    }
     clearProductsCache();
     return { success:true };
   }
@@ -293,7 +334,7 @@ function saveOrder(order) {
   var ts      = new Date();
   var uom     = normalizeUnit(order.unit);
   var qty     = Number(order.quantity) || 0;
-  qty = (uom === 'KG') ? r2(qty) : Math.round(qty);
+  qty = (uom === 'PCS') ? Math.round(qty) : r2(qty);
   if (!(qty > 0)) return { error: 'পরিমাণ/ওজন সঠিক নয়' };
   var unit    = Number(order.unitPrice)      || 0;
   var sub     = r2(unit * qty);
@@ -504,7 +545,7 @@ function colIndex(sheet, name) {
 /* ======== SETTINGS (ডেলিভারি চার্জ, ওয়েব ইনফো, সোশ্যাল) ======== */
 
 var NUM_SETTING_KEYS  = ['deliveryInside', 'deliveryOutside'];
-var TEXT_SETTING_KEYS = ['webName','webAddress','webLogo','webMobile','webMobile2','webMobile3','webEmail',
+var TEXT_SETTING_KEYS = ['webName','webAddress','webLogo','webLogoEn','webMobile','webMobile2','webMobile3','webEmail',
                          'facebook','youtube','instagram','twitter','whatsapp'];
 
 function clearSettingsCache() {
@@ -574,7 +615,8 @@ function getItems() {
   var rows  = sheet.getDataRange().getValues();
   return {
     items: rowsToObjects(rows).map(function(o) {
-      return { itemId: String(o.itemid), name: String(o.name || ''), brand: String(o.brand || '') };
+      return { itemId: String(o.itemid), name: String(o.name || ''), brand: String(o.brand || ''),
+             unit: normalizeUnit(o.unit), colors: cleanList(o.colors), sizes: cleanList(o.sizes) };
     })
   };
 }
@@ -585,8 +627,12 @@ function addItem(it) {
   var headers = getHeaders(sheet);
   var id      = 'ITM-' + new Date().getTime();
   appendRowText(sheet, headers, {
-    'itemid': id, 'name': String(it.name).trim(), 'brand': String(it.brand || '').trim(), 'createdat': new Date()
+    'itemid': id, 'name': String(it.name).trim(), 'brand': String(it.brand || '').trim(), 'createdat': new Date(),
+    'unit': normalizeUnit(it.unit),
+    'colors': normalizeUnit(it.unit) === 'PCS' ? cleanList(it.colors) : '',
+    'sizes':  normalizeUnit(it.unit) === 'PCS' ? cleanList(it.sizes)  : ''
   }, []);
+  clearProductsCache();
   return { success: true, itemId: id };
 }
 
@@ -600,6 +646,11 @@ function updateItem(it) {
     if (String(rows[i][idC]) !== String(it.itemId)) continue;
     sheet.getRange(i + 1, nC + 1).setValue(String(it.name).trim());
     sheet.getRange(i + 1, bC + 1).setValue(String(it.brand || '').trim());
+    var uom = normalizeUnit(it.unit);
+    sheet.getRange(i + 1, colIndex(sheet, 'unit') + 1).setValue(uom);
+    sheet.getRange(i + 1, colIndex(sheet, 'colors') + 1).setValue(uom === 'PCS' ? cleanList(it.colors) : '');
+    sheet.getRange(i + 1, colIndex(sheet, 'sizes') + 1).setValue(uom === 'PCS' ? cleanList(it.sizes) : '');
+    clearProductsCache();
     return { success: true };
   }
   return { error: 'পণ্য পাওয়া যায়নি' };
@@ -611,7 +662,7 @@ function deleteItem(itemId) {
   var rows  = sheet.getDataRange().getValues();
   var idC = colIndex(sheet, 'itemId');
   for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][idC]) === String(itemId)) { sheet.deleteRow(i + 1); return { success: true }; }
+    if (String(rows[i][idC]) === String(itemId)) { sheet.deleteRow(i + 1); clearProductsCache(); return { success: true }; }
   }
   return { error: 'পণ্য পাওয়া যায়নি' };
 }
@@ -645,6 +696,7 @@ function savePurchase(p) {
     var qty = Number(it.qty) || 0, price = Number(it.price) || 0;
     return {
       name: String(it.name || '').trim(), brand: String(it.brand || '').trim(),
+      unit: normalizeUnit(it.unit),
       colour: String(it.colour || '').trim(), size: String(it.size || '').trim(),
       price: r2(price), qty: qty, amount: r2(price * qty)
     };
@@ -742,10 +794,10 @@ function getStock() {
     (p.items || []).forEach(function(it) {
       var nk = it.name.toLowerCase();
       var dk = [nk, it.brand.toLowerCase(), (it.colour || '').toLowerCase(), (it.size || '').toLowerCase()].join('|');
-      if (!details[dk]) details[dk] = { product: it.name, brand: it.brand, colour: it.colour || '', size: it.size || '', purchased: 0 };
+      if (!details[dk]) details[dk] = { product: it.name, brand: it.brand, unit: normalizeUnit(it.unit), colour: it.colour || '', size: it.size || '', purchased: 0 };
       details[dk].purchased += Number(it.qty) || 0;
 
-      if (!products[nk]) products[nk] = { product: it.name, brands: {}, purchased: 0 };
+      if (!products[nk]) products[nk] = { product: it.name, unit: normalizeUnit(it.unit), brands: {}, purchased: 0 };
       products[nk].purchased += Number(it.qty) || 0;
       if (it.brand) products[nk].brands[it.brand] = true;
     });
@@ -753,7 +805,7 @@ function getStock() {
 
   var prodList = Object.keys(products).map(function(nk) {
     var x = products[nk], sold = soldByName[nk] || 0;
-    return { product: x.product, brand: Object.keys(x.brands).join(', '),
+    return { product: x.product, unit: x.unit, brand: Object.keys(x.brands).join(', '),
              purchased: x.purchased, sold: sold, stock: x.purchased - sold };
   }).sort(function(a, b) { return a.product.localeCompare(b.product); });
 
@@ -782,6 +834,15 @@ function listAdmins() {
   return { admins: rowsToObjects(sheet.getDataRange().getValues()).map(adminPublic) };
 }
 
+function storedPw(o) { return String(o.password === undefined || o.password === null ? '' : o.password).trim(); }
+
+function passwordTaken(rows, pw, exceptId) {
+  return rows.some(function(o) {
+    if (exceptId && String(o.adminid) === String(exceptId)) return false;
+    return storedPw(o) !== '' && storedPw(o) === pw;
+  });
+}
+
 function adminDuplicate(rows, mobile, email, exceptId) {
   return rows.some(function(o) {
     if (exceptId && String(o.adminid) === String(exceptId)) return false;
@@ -794,20 +855,21 @@ function adminDuplicate(rows, mobile, email, exceptId) {
 function addAdmin(a) {
   if (!a || !String(a.name || '').trim()) return { error: 'নাম দিন' };
   var mobile = normMobile(a.mobile), email = String(a.email || '').trim().toLowerCase();
-  if (!mobile && !email) return { error: 'মোবাইল বা ইমেইল দিন (লগইনের জন্য)' };
-  if (String(a.password || '').length < 6) return { error: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' };
+  if (!mobile) return { error: 'মোবাইল নং দিন (পাসওয়ার্ড উদ্ধারের জন্য)' };
+  if (!/^\d{5}$/.test(String(a.password || ''))) return { error: 'পাসওয়ার্ড অবশ্যই ৫ সংখ্যার হতে হবে' };
 
   var sheet = ensureSheet('Admins');
   var rows  = rowsToObjects(sheet.getDataRange().getValues());
   if (adminDuplicate(rows, mobile, email, null)) return { error: 'এই মোবাইল/ইমেইল আগে থেকেই আছে' };
+  if (passwordTaken(rows, String(a.password), null)) return { error: 'এই পাসওয়ার্ড অন্য একজন ব্যবহার করছেন, আলাদা ৫ সংখ্যার পাসওয়ার্ড দিন' };
 
   var salt = Utilities.getUuid();
   var id   = 'ADM-' + new Date().getTime();
   appendRowText(sheet, getHeaders(sheet), {
     'adminid': id, 'name': String(a.name).trim(), 'designation': String(a.designation || '').trim(),
     'mobile': mobile, 'email': email, 'passwordhash': hashPassword(salt, String(a.password)),
-    'salt': salt, 'createdat': new Date()
-  }, ['mobile']);
+    'salt': salt, 'createdat': new Date(), 'password': String(a.password)
+  }, ['mobile', 'password']);
   return { success: true, adminId: id };
 }
 
@@ -815,12 +877,13 @@ function updateAdmin(a) {
   if (!a || !a.adminId) return { error: 'adminId দরকার' };
   if (!String(a.name || '').trim()) return { error: 'নাম দিন' };
   var mobile = normMobile(a.mobile), email = String(a.email || '').trim().toLowerCase();
-  if (!mobile && !email) return { error: 'মোবাইল বা ইমেইল দিন (লগইনের জন্য)' };
-  if (a.password && String(a.password).length < 6) return { error: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' };
+  if (!mobile) return { error: 'মোবাইল নং দিন (পাসওয়ার্ড উদ্ধারের জন্য)' };
+  if (a.password && !/^\d{5}$/.test(String(a.password))) return { error: 'পাসওয়ার্ড অবশ্যই ৫ সংখ্যার হতে হবে' };
 
   var sheet = ensureSheet('Admins');
   var data  = sheet.getDataRange().getValues();
   if (adminDuplicate(rowsToObjects(data), mobile, email, a.adminId)) return { error: 'এই মোবাইল/ইমেইল আগে থেকেই আছে' };
+  if (a.password && passwordTaken(rowsToObjects(data), String(a.password), a.adminId)) return { error: 'এই পাসওয়ার্ড অন্য একজন ব্যবহার করছেন, আলাদা ৫ সংখ্যার পাসওয়ার্ড দিন' };
 
   var idC = colIndex(sheet, 'adminId');
   for (var i = 1; i < data.length; i++) {
@@ -839,6 +902,7 @@ function updateAdmin(a) {
       var salt = Utilities.getUuid();
       setCol('salt', salt);
       setCol('passwordHash', hashPassword(salt, String(a.password)));
+      setCol('password', String(a.password), true);
     }
     return { success: true };
   }
@@ -856,30 +920,95 @@ function deleteAdmin(adminId) {
   return { error: 'ব্যবস্থাপক পাওয়া যায়নি' };
 }
 
-// মোবাইল/ইমেইল + পাসওয়ার্ড যাচাই। ৫ বার ভুল হলে ১৫ মিনিট লক।
+// শুধু ৫ সংখ্যার পাসওয়ার্ড দিয়ে লগইন (প্রত্যেক ব্যবস্থাপকের পাসওয়ার্ড আলাদা)।
+// ১০ বার ভুল হলে ১৫ মিনিট লক (৫ সংখ্যার পাসওয়ার্ড ব্রুট-ফোর্স ঠেকাতে)।
 function adminLogin(identifier, password) {
-  var ident = String(identifier || '').trim().toLowerCase();
-  if (!ident || !password) return { error: 'মোবাইল/ইমেইল ও পাসওয়ার্ড দিন' };
+  var pw = String(password || '').trim();
+  if (!/^\d{5}$/.test(pw)) return { error: 'ভুল পাসওয়ার্ড, ৫ সংখ্যার পাসওয়ার্ড দিন' };
   var cache = CacheService.getScriptCache();
-  var key   = 'lf_' + ident.slice(0, 100);
+  var key   = 'lf_pw';
   var fails = Number(cache.get(key)) || 0;
-  if (fails >= 5) return { error: 'অনেকবার ভুল হয়েছে। ১৫ মিনিট পর আবার চেষ্টা করুন' };
+  if (fails >= 10) return { error: 'অনেকবার ভুল হয়েছে। ১৫ মিনিট পর আবার চেষ্টা করুন' };
 
   var sheet = ensureSheet('Admins');
   var rows  = rowsToObjects(sheet.getDataRange().getValues());
-  var identMobile = normMobile(ident);
   for (var i = 0; i < rows.length; i++) {
-    var o = rows[i];
-    var match = (normMobile(o.mobile) && normMobile(o.mobile) === identMobile) ||
-                (String(o.email || '').toLowerCase() === ident);
-    if (!match) continue;
-    if (hashPassword(String(o.salt), String(password)) === String(o.passwordhash)) {
+    var o = rows[i], sp = storedPw(o);
+    var ok = sp ? (sp === pw) : (o.salt && o.passwordhash && hashPassword(String(o.salt), pw) === String(o.passwordhash));
+    if (ok) {
       cache.remove(key);
       return { success: true, admin: { name: String(o.name || ''), designation: String(o.designation || '') } };
     }
   }
   cache.put(key, String(fails + 1), 900);
-  return { error: 'মোবাইল/ইমেইল বা পাসওয়ার্ড ভুল' };
+  return { error: 'ভুল পাসওয়ার্ড, আবার চেষ্টা করুন' };
+}
+
+/* ---------- পাসওয়ার্ড উদ্ধার (ওয়েবসাইটের ইমেইলে Pin Code) ---------- */
+
+function listAdminNames() {
+  var sheet = ensureSheet('Admins');
+  return { admins: rowsToObjects(sheet.getDataRange().getValues()).map(function(o) {
+    return { adminId: String(o.adminid), name: String(o.name || '') };
+  }) };
+}
+
+function maskEmail(e) {
+  var p = String(e).split('@');
+  return (p[0].slice(0, 2) + '***@' + (p[1] || ''));
+}
+
+function sendRecoveryPin(adminId, mobile) {
+  mobile = normMobile(mobile);
+  if (!adminId || !mobile) return { error: 'নাম সিলেক্ট করুন ও মোবাইল নং দিন' };
+  var cache = CacheService.getScriptCache();
+  var sk = 'rs_' + adminId;
+  var sends = Number(cache.get(sk)) || 0;
+  if (sends >= 3) return { error: 'অনেকবার চেষ্টা হয়েছে। ১৫ মিনিট পর আবার চেষ্টা করুন' };
+  cache.put(sk, String(sends + 1), 900);
+
+  var rows = rowsToObjects(ensureSheet('Admins').getDataRange().getValues());
+  var me = null;
+  rows.forEach(function(o) { if (String(o.adminid) === String(adminId)) me = o; });
+  if (!me || normMobile(me.mobile) !== mobile) return { error: 'নাম ও মোবাইল নং মিলছে না' };
+  if (!storedPw(me)) return { error: 'এই ব্যবস্থাপকের পাসওয়ার্ড উদ্ধার করা যাবে না। Management থেকে নতুন পাসওয়ার্ড সেট করুন' };
+
+  var email = String(getSettings().webEmail || '').trim();
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'ওয়েবসাইটের ইমেইল সেট করা নেই (Settings → Web Info)' };
+
+  var pin = ('000000' + (parseInt(Utilities.getUuid().replace(/-/g, '').slice(0, 8), 16) % 1000000)).slice(-6);
+  cache.put('rp_' + adminId, hashPassword(String(adminId), pin), 600);
+  cache.remove('rf_' + adminId);
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: 'পাসওয়ার্ড উদ্ধারের Pin Code',
+      body: String(me.name || '') + ' এর পাসওয়ার্ড উদ্ধারের Pin Code: ' + pin + '\n\nএই কোডটি ১০ মিনিট পর্যন্ত কার্যকর থাকবে। আপনি অনুরোধ না করে থাকলে এই ইমেইল উপেক্ষা করুন।'
+    });
+  } catch (err) {
+    return { error: 'ইমেইল পাঠানো যায়নি। Apps Script-এ ইমেইল পাঠানোর অনুমতি (authorize) দিন' };
+  }
+  return { success: true, emailHint: maskEmail(email) };
+}
+
+function verifyRecoveryPin(adminId, pin) {
+  if (!adminId || !pin) return { error: 'Pin Code দিন' };
+  var cache = CacheService.getScriptCache();
+  var fk = 'rf_' + adminId;
+  var fails = Number(cache.get(fk)) || 0;
+  if (fails >= 5) { cache.remove('rp_' + adminId); return { error: 'অনেকবার ভুল হয়েছে। নতুন Pin Code নিন' }; }
+  var stored = cache.get('rp_' + adminId);
+  if (!stored) return { error: 'Pin Code এর মেয়াদ শেষ বা পাঠানো হয়নি। আবার Pin Code নিন' };
+  if (hashPassword(String(adminId), String(pin).trim()) !== stored) {
+    cache.put(fk, String(fails + 1), 900);
+    return { error: 'ভুল Pin Code' };
+  }
+  var rows = rowsToObjects(ensureSheet('Admins').getDataRange().getValues());
+  var me = null;
+  rows.forEach(function(o) { if (String(o.adminid) === String(adminId)) me = o; });
+  if (!me || !storedPw(me)) return { error: 'পাসওয়ার্ড পাওয়া যায়নি' };
+  cache.remove('rp_' + adminId); cache.remove(fk);
+  return { success: true, name: String(me.name || ''), password: storedPw(me) };
 }
 
 
