@@ -1,11 +1,11 @@
 /**
- * ProyojonBD — Apps Script Backend (v6)
+ * ProyojonBD — Apps Script Backend (v8)
  * শীট ও হেডার অটো তৈরি হবে। আগের শীটে নতুন কলাম missing থাকলে অটো যুক্ত হবে।
  */
 
 var SHEET_SCHEMAS = {
   'Products': ['id','name','category','unit','desc','price','discount','stock','image','status','colors','sizes'],
-  'Orders':   ['orderId','timestamp','customerName','phone','productName','category','deliveryArea','address','quantity','unit','color','size','unitPrice','subtotal','deliveryCharge','total','status'],
+  'Orders':   ['orderId','timestamp','customerName','phone','productName','category','deliveryArea','address','quantity','unit','color','size','unitPrice','subtotal','deliveryCharge','total','status','salesProcess'],
   'Expenses': ['expenseId','timestamp','category','description','amount','voucherNo','date'],
   'About':    ['key','value','updatedAt'],
   'Settings': ['key','value','updatedAt'],
@@ -15,7 +15,8 @@ var SHEET_SCHEMAS = {
   'Admins':   ['adminId','name','designation','mobile','email','passwordHash','salt','createdAt','password'],
   'Invests':  ['id','date','name','mobile','address','amount','createdAt'],
   'Deposits': ['id','date','description','amount','person','createdAt'],
-  'Withdrawals': ['id','date','description','amount','person','createdAt']
+  'Withdrawals': ['id','date','description','amount','person','createdAt'],
+  'Incomes':  ['invoiceNo','date','itemsJson','total','createdAt']
 };
 
 var DEFAULT_SETTINGS = { deliveryInside: 60, deliveryOutside: 150 };
@@ -124,6 +125,7 @@ function doGet(e) {
   if (action === 'invests')     return jsonResponse(getInvests());
   if (action === 'deposits')    return jsonResponse(getDeposits());
   if (action === 'withdrawals') return jsonResponse(getWithdrawals());
+  if (action === 'incomes')     return jsonResponse(getIncomes());
   return jsonResponse({ error: 'Unknown action' });
 }
 
@@ -134,6 +136,8 @@ function doPost(e) {
   switch (body.action) {
     case 'order':             return jsonResponse(saveOrder(body.order));
     case 'updateOrderStatus': return jsonResponse(updateOrderStatus(body.orderId, body.status));
+    case 'deleteOrder':       return jsonResponse(deleteOrder(body.orderId));
+    case 'deleteCancelledOrders': return jsonResponse(deleteCancelledOrders());
     case 'addProduct':        return jsonResponse(addProduct(body.product));
     case 'updateProduct':     return jsonResponse(updateProduct(body.product));
     case 'deleteProduct':     return jsonResponse(deleteProduct(body.id));
@@ -166,6 +170,9 @@ function doPost(e) {
     case 'addWithdrawal':     return jsonResponse(addCashRecord('Withdrawals', 'WDR-', body.record));
     case 'updateWithdrawal':  return jsonResponse(updateCashRecord('Withdrawals', body.record));
     case 'deleteWithdrawal':  return jsonResponse(deleteRecord('Withdrawals', body.id));
+    case 'addIncome':         return jsonResponse(addIncome(body.income));
+    case 'updateIncome':      return jsonResponse(updateIncome(body.invoiceNo, body.income));
+    case 'deleteIncome':      return jsonResponse(deleteIncome(body.invoiceNo));
     default:                  return jsonResponse({ error: 'Unknown action' });
   }
 }
@@ -325,7 +332,7 @@ function getOrders(status) {
         orderId:        o.orderid,
         timestamp:      o.timestamp,
         customerName:   o.customername,
-        phone:          o.phone,
+        phone:          fixPhone(o.phone),
         productName:    o.productname,
         category:       o.category || '',
         deliveryArea:   o.deliveryarea,
@@ -338,13 +345,16 @@ function getOrders(status) {
         subtotal:       o.subtotal,
         deliveryCharge: o.deliverycharge,
         total:          o.total,
-        status:         (o.status||'Pending').toString().trim()
+        status:         (o.status||'Pending').toString().trim(),
+        salesProcess:   (String(o.salesprocess || '').trim().toLowerCase() === 'offline') ? 'Offline' : 'Online'
       };
     });
   return { orders: orders.reverse() };
 }
 
 function saveOrder(order) {
+  var offline = !!order && order.salesProcess === 'Offline';   // Sales in Shop — সরাসরি ডেলিভারি সম্পন্ন
+  if (offline && !String(order.customerName || '').trim()) order.customerName = 'Shop Customer';
   if (!order || !order.productName || !order.customerName) return { error: 'তথ্য অসম্পূর্ণ' };
   var sheet   = ensureSheet('Orders');
   var headers = getHeaders(sheet);
@@ -356,14 +366,16 @@ function saveOrder(order) {
   if (!(qty > 0)) return { error: 'পরিমাণ/ওজন সঠিক নয়' };
   var unit    = Number(order.unitPrice)      || 0;
   var sub     = r2(unit * qty);
-  var area    = order.deliveryArea           || 'Inside Feni';
+  var area    = offline ? 'In Shop' : (order.deliveryArea || 'Inside Feni');
   // ডেলিভারি চার্জ সবসময় Settings শীট থেকে (ক্লায়েন্টের পাঠানো মান বিশ্বাস করা হয় না)
   var st      = getSettings();
   var dc      = (area === 'Outside Feni') ? st.deliveryOutside : st.deliveryInside;
+  if (offline) dc = 0;                     // শপ থেকে বিক্রিতে ডেলিভারি চার্জ নেই
   if (order.noDelivery === true) dc = 0;   // কার্টের একাধিক পণ্যে ডেলিভারি চার্জ একবারই
   var total   = sub + dc;
 
-  sheet.appendRow(buildRow(headers, {
+  // মোবাইল নম্বর টেক্সট ফরম্যাটে (শুরুর ০ যাতে হারিয়ে না যায়)
+  appendRowText(sheet, headers, {
     'orderid':        orderId,
     'timestamp':      ts,
     'customername':   order.customerName || '',
@@ -380,8 +392,9 @@ function saveOrder(order) {
     'subtotal':       sub,
     'deliverycharge': dc,
     'total':          total,
-    'status':         'Pending'
-  }));
+    'status':         offline ? 'Delivery' : 'New',   // অনলাইন: নতুন অর্ডার → কনফার্মে Pending (বুকিং); শপ: সরাসরি Delivery
+    'salesprocess':   offline ? 'Offline' : 'Online'
+  }, ['phone']);
 
   return { success:true, orderId:orderId, timestamp:ts.toISOString(),
            subtotal:sub, deliveryArea:area, deliveryCharge:dc, total:total };
@@ -402,6 +415,39 @@ function updateOrderStatus(orderId, status) {
     }
   }
   return { error: 'অর্ডার পাওয়া যায়নি' };
+}
+
+// একটি অর্ডার একদম মুছে ফেলা (নতুন অর্ডার ডিলেট / বাতিল তালিকা থেকে ডিলেট)
+function deleteOrder(orderId) {
+  if (!orderId) return { error: 'orderId দরকার' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Orders');
+    var rows  = sheet.getDataRange().getValues();
+    var idC   = colIndex(sheet, 'orderId');
+    for (var i = rows.length - 1; i >= 1; i--) {
+      if (String(rows[i][idC]) === String(orderId)) { sheet.deleteRow(i + 1); return { success: true }; }
+    }
+    return { error: 'অর্ডার পাওয়া যায়নি' };
+  } finally { lock.releaseLock(); }
+}
+
+// বাতিল (Cancel) তালিকার সব অর্ডার একসাথে মুছে ফেলা
+function deleteCancelledOrders() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Orders');
+    var rows  = sheet.getDataRange().getValues();
+    var stC   = colIndex(sheet, 'status');
+    if (stC < 0) return { error: 'কলাম পাওয়া যায়নি' };
+    var n = 0;
+    for (var i = rows.length - 1; i >= 1; i--) {
+      if (String(rows[i][stC] || '').trim().toLowerCase() === 'cancel') { sheet.deleteRow(i + 1); n++; }
+    }
+    return { success: true, deleted: n };
+  } finally { lock.releaseLock(); }
 }
 
 /* ======== EXPENSES ======== */
@@ -564,7 +610,7 @@ function colIndex(sheet, name) {
 
 var NUM_SETTING_KEYS  = ['deliveryInside', 'deliveryOutside'];
 var TEXT_SETTING_KEYS = ['webName','webAddress','webLogo','webLogoEn','webMobile','webMobile2','webMobile3','webEmail',
-                         'facebook','youtube','instagram','twitter','whatsapp'];
+                         'facebook','youtube','instagram','twitter','tiktok','whatsapp'];
 
 function clearSettingsCache() {
   try { CacheService.getScriptCache().remove(SETTINGS_CACHE_KEY); } catch (e) {}
@@ -882,9 +928,10 @@ function getStock() {
   var orders = rowsToObjects(oSheet.getDataRange().getValues());
   var soldByName = {};
   orders.forEach(function(o) {
-    // শুধু ডেলিভারি সম্পন্ন অর্ডারে স্টক কমবে (Pending / Cancel ধরা হবে না)
+    // বুকিং (Pending) ও ডেলিভারি সম্পন্ন অর্ডারে স্টক কমে। নতুন অর্ডার (New) ও বাতিল (Cancel) ধরা হয় না —
+    // তাই বুকিং থেকে বাতিল হলে পণ্য অটো স্টকে ফেরত আসে।
     var st = String(o.status || 'Pending').trim().toLowerCase();
-    if (st !== 'delivery' && st !== 'delivered') return;
+    if (st !== 'pending' && st !== 'delivery' && st !== 'delivered') return;
     var k = String(o.productname || '').trim().toLowerCase();
     if (!k) return;
     soldByName[k] = (soldByName[k] || 0) + (Number(o.quantity) || 0);
@@ -921,6 +968,12 @@ function getStock() {
 function hashPassword(salt, pw) {
   var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + '|' + pw, Utilities.Charset.UTF_8);
   return bytes.map(function(b) { var h = (b < 0 ? b + 256 : b).toString(16); return h.length === 1 ? '0' + h : h; }).join('');
+}
+
+// শীটে আগে নম্বর হিসেবে সেভ হওয়া ১০ সংখ্যার (১XXXXXXXXX) নম্বরে শুরুতে ০ বসানো
+function fixPhone(v) {
+  var t = String(v == null ? '' : v).trim();
+  return /^1\d{9}$/.test(t) ? '0' + t : t;
 }
 
 function normMobile(m) { return String(m || '').replace(/[\s\-]/g, ''); }
@@ -1214,4 +1267,93 @@ function deleteRecord(sheetName, id) {
     if (String(rows[i][idC]) === String(id)) { sheet.deleteRow(i + 1); return { success: true }; }
   }
   return { error: 'রেকর্ড পাওয়া যায়নি' };
+}
+
+
+/* ======== INCOME (আয় এন্ট্রি; একটি Invoice-এ একাধিক লাইন) ======== */
+
+function cleanIncomeItems(items) {
+  return (items || []).map(function(it) {
+    return { description: String(it.description || '').trim().slice(0, 300), amount: r2(it.amount) };
+  }).filter(function(it) { return it.amount > 0; });
+}
+
+function incomeFromObj(o) {
+  var items = [];
+  try { items = JSON.parse(o.itemsjson || '[]'); } catch (e) {}
+  return { invoiceNo: String(o.invoiceno), date: fmtDate(o.date), items: items, total: Number(o.total) || 0 };
+}
+
+function getIncomes() {
+  var sheet = ensureSheet('Incomes');
+  return { incomes: rowsToObjects(sheet.getDataRange().getValues()).map(incomeFromObj).reverse() };
+}
+
+function addIncome(inc) {
+  if (!inc) return { error: 'তথ্য অসম্পূর্ণ' };
+  var items = cleanIncomeItems(inc.items);
+  if (!items.length) return { error: 'কমপক্ষে একটি সঠিক Amount দিন' };
+  var total = r2(items.reduce(function(a, it) { return a + it.amount; }, 0));
+  var date = validYmd(inc.date);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Incomes');
+    var headers = getHeaders(sheet);
+    var vc = colIndex(sheet, 'invoiceNo'), max = 0;
+    if (vc >= 0 && sheet.getLastRow() > 1) {
+      sheet.getRange(2, vc + 1, sheet.getLastRow() - 1, 1).getValues().forEach(function(r) {
+        var m = String(r[0] || '').match(/(\d+)\s*$/);
+        if (m) max = Math.max(max, parseInt(m[1], 10));
+      });
+    }
+    var invoiceNo = 'INC-' + ('0000' + (max + 1)).slice(-4);
+    appendRowText(sheet, headers, {
+      'invoiceno': invoiceNo, 'date': date, 'itemsjson': JSON.stringify(items), 'total': total, 'createdat': new Date()
+    }, ['invoiceno', 'date']);
+    return { success: true, income: { invoiceNo: invoiceNo, date: date, items: items, total: total } };
+  } finally { lock.releaseLock(); }
+}
+
+function updateIncome(invoiceNo, inc) {
+  if (!invoiceNo || !inc) return { error: 'তথ্য অসম্পূর্ণ' };
+  var items = cleanIncomeItems(inc.items);
+  if (!items.length) return { error: 'কমপক্ষে একটি সঠিক Amount দিন' };
+  var total = r2(items.reduce(function(a, it) { return a + it.amount; }, 0));
+  var date = validYmd(inc.date);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Incomes');
+    var rows  = sheet.getDataRange().getValues();
+    var iC = colIndex(sheet, 'invoiceNo');
+    var vals = { 'date': date, 'itemsjson': JSON.stringify(items), 'total': total };
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][iC]) !== String(invoiceNo)) continue;
+      Object.keys(vals).forEach(function(k) {
+        var c = colIndex(sheet, k);
+        if (c < 0) return;
+        var cell = sheet.getRange(i + 1, c + 1);
+        if (k === 'date') cell.setNumberFormat('@');
+        cell.setValue(vals[k]);
+      });
+      return { success: true, income: { invoiceNo: String(invoiceNo), date: date, items: items, total: total } };
+    }
+    return { error: 'Invoice পাওয়া যায়নি' };
+  } finally { lock.releaseLock(); }
+}
+
+function deleteIncome(invoiceNo) {
+  if (!invoiceNo) return { error: 'Invoice দরকার' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Incomes');
+    var rows  = sheet.getDataRange().getValues();
+    var iC = colIndex(sheet, 'invoiceNo');
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][iC]) === String(invoiceNo)) { sheet.deleteRow(i + 1); return { success: true }; }
+    }
+    return { error: 'Invoice পাওয়া যায়নি' };
+  } finally { lock.releaseLock(); }
 }

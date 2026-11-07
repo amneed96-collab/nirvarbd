@@ -171,9 +171,9 @@
   /* ---------- about ---------- */
   .about-card{ background:var(--white); border:1px solid var(--hairline); border-radius:14px; padding:28px; max-width:680px; }
   .about-card h2{ margin-top:0; color:var(--primary); }
-  .about-card p{ color:var(--ink-soft); line-height:1.7; font-size:0.97rem; }
+  .about-card p{ color:var(--ink-soft); line-height:1.7; font-size:0.97rem; text-align:justify; white-space:pre-wrap; overflow-wrap:anywhere; }
   .about-points{ list-style:none; padding:0; margin:18px 0 0; display:grid; gap:10px; }
-  .about-points li{ display:flex; align-items:flex-start; gap:10px; font-size:0.92rem; }
+  .about-points li{ display:flex; align-items:flex-start; gap:10px; font-size:0.92rem; text-align:justify; }
   .about-points svg{ flex:none; margin-top:2px; color:var(--accent); }
 
   .order-intro{ color:var(--ink-soft); margin-bottom:18px; font-size:0.95rem; }
@@ -495,9 +495,9 @@
 
   /* কার্ড */
   .skeleton-card{ border-color:var(--card-border); }
-  .product-card{ border-color:var(--card-border); }
-  .product-card:hover{ box-shadow:0 6px 18px rgba(26,31,54,0.14); }
-  .product-thumb{ aspect-ratio:1/0.9; border-bottom:2px solid #4e8565; }
+  .product-card{ border:none; box-shadow:0 1px 6px rgba(26,31,54,0.10); }
+  .product-card:hover{ box-shadow:0 5px 14px rgba(26,31,54,0.16); }
+  .product-thumb{ aspect-ratio:1/0.9; border-bottom:none; }
   .product-body{ padding:6px 10px 8px; gap:0; }
   .cat-row{ height:18px; }
   .product-cat-tag{ margin-bottom:0; }
@@ -519,6 +519,17 @@
 
   /* Report / Invest / Cash */
   .rpt-h{ margin:22px 0 10px; font-size:1.05rem; color:var(--primary); }
+  /* Report প্রিভিউ = প্রিন্টের মতো */
+  .rpt-paper{ background:#fff; color:#1A1F36; max-width:820px; margin:10px auto; padding:20px; border:1px solid #ddd; box-shadow:0 2px 10px rgba(0,0,0,0.08); font-family:'Hind Siliguri', Arial, sans-serif; }
+  .rpt-paper h2{ margin:0; text-align:center; }
+  .rpt-paper .meta{ font-size:12px; color:#6B7280; margin:2px 0 8px; text-align:center; }
+  .rpt-paper .rpt-h{ margin:18px 0 6px; font-size:14px; color:#1A1F36; }
+  .rpt-paper table{ width:100%; border-collapse:collapse; font-size:12px; }
+  .rpt-paper th, .rpt-paper td{ border:1px solid #ddd; padding:6px 8px; text-align:left; }
+  .rpt-paper th{ background:#EFEFEB; text-align:center; }
+  .rpt-paper tfoot td{ font-weight:bold; background:#F5F5F0; }
+  .rpt-paper .pl-result{ margin-top:10px; padding:10px; border:2px solid #1A1F36; border-radius:8px; text-align:center; font-weight:bold; font-size:15px; background:#fff; color:#1A1F36; }
+  .rpt-paper .rpt-note{ font-size:11px; color:#6B7280; margin-top:6px; }
   .rpt-period{ font-size:0.85rem; color:var(--ink-soft); margin:0 0 4px; }
   .pl-result{ margin:12px 0 0; padding:14px 16px; border-radius:12px; font-weight:700; font-size:1.15rem; text-align:center; }
   .pl-result.profit{ background:#D1FAE5; color:#065F46; }
@@ -705,7 +716,7 @@
   <div class="page">
     <div class="filter-bar">
       <select id="categoryFilter">
-        <option value="">সব ক্যাটাগরি</option>
+        <option value="">পছন্দের পণ্য পেতে ক্যাটাগরি সিলেক্ট করুন</option>
         <option value="Natural">Natural</option>
         <option value="Computer">Computer</option>
         <option value="Hardware">Hardware</option>
@@ -713,6 +724,10 @@
         <option value="Software">Software</option>
         <option value="Website">Website</option>
         <option value="Electronic">Electronic</option>
+        <option value="Cloth">Cloth</option>
+        <option value="Honey">Honey</option>
+        <option value="Oil">Oil</option>
+        <option value="Foods">Foods</option>
         <option value="Others">Others</option>
       </select>
     </div>
@@ -778,7 +793,7 @@
         </button>
         <div class="report-subnav report-menu" id="reportSubnav">
           <button class="active" data-pane="dashboard">Dashboard</button>
-          <button data-pane="report">Report</button>
+          <button data-pane="orders">Orders</button>
           <button type="button" class="has-sub" data-group="inventory" aria-expanded="false"><span>Products</span><span class="chev">▾</span></button>
           <div class="sub-group" data-group="inventory">
             <button type="button" data-pane="inventory" data-acc="plist">Products List</button>
@@ -786,18 +801,20 @@
             <button type="button" data-pane="inventory" data-acc="stock">Stock</button>
             <button type="button" data-pane="inventory" data-acc="due">Due Pay</button>
           </div>
-          <button data-pane="orders">Orders</button>
+          <button data-pane="shop">Sales in Shop</button>
+          <button data-pane="income">Income</button>
           <button data-pane="expense">Expenses</button>
-          <button data-pane="invest">Invest</button>
           <button type="button" class="has-sub" data-group="cash" aria-expanded="false"><span>Cash</span><span class="chev">▾</span></button>
           <div class="sub-group" data-group="cash">
             <button type="button" data-pane="cash" data-acc="deposit">Deposit</button>
             <button type="button" data-pane="cash" data-acc="withdrawal">Withdrawal</button>
             <button type="button" data-pane="cash" data-acc="cashreport">Cash Report</button>
           </div>
-          <button data-pane="aboutedit">About Us</button>
+          <button data-pane="invest">Invest</button>
+          <button data-pane="report">Report</button>
           <button type="button" class="has-sub" data-group="settings" aria-expanded="false"><span>Settings</span><span class="chev">▾</span></button>
           <div class="sub-group" data-group="settings">
+            <button type="button" data-pane="aboutedit">About Us</button>
             <button type="button" data-pane="settings" data-acc="webinfo">Web Info</button>
             <button type="button" data-pane="settings" data-acc="social">Social</button>
             <button type="button" data-pane="settings" data-acc="admin">Management</button>
@@ -817,16 +834,52 @@
         </div>
       </div>
 
+      <!-- ---------- SALES IN SHOP ---------- -->
+      <div class="report-pane" id="pane-shop">
+        <div class="table-toolbar">
+          <input type="search" id="shopSearch" placeholder="পণ্য খুঁজুন…" style="flex:1;min-width:140px;max-width:280px;padding:7px 10px;border:1px solid var(--card-border);border-radius:8px;font:inherit;">
+          <button class="btn btn-outline btn-sm" id="shopRefreshBtn">রিফ্রেশ</button>
+        </div>
+        <div class="table-wrap" id="shopTableWrap"><div class="empty-state">লোড হচ্ছে…</div></div>
+      </div>
+
+      <!-- ---------- INCOME ---------- -->
+      <div class="report-pane" id="pane-income">
+        <div class="acc" data-acc="incomeform">
+          <button type="button" class="acc-btn" aria-expanded="false"><span>নতুন Income যুক্ত করুন</span><span class="chev">▾</span></button>
+          <div class="acc-body">
+        <div class="form-card">
+          <div class="form-grid">
+            <div class="field"><label>Date</label><input type="date" id="incDate"></div>
+            <div class="field"><label>Invoice No (অটো)</label><input type="text" id="incInvoice" readonly></div>
+          </div>
+          <div id="incLines"></div>
+          <div class="table-toolbar" style="justify-content:space-between;margin:8px 0 0;">
+            <button class="btn btn-outline btn-sm" id="incAddLineBtn" type="button">+ আরেকটি এন্ট্রি</button>
+            <b>মোট: <span id="incTotal">০</span> টাকা</b>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-outline" id="incCancelBtn" type="button">বাতিল</button>
+            <button class="btn btn-teal" id="incSaveBtn" type="button">সংরক্ষণ করুন</button>
+          </div>
+        </div>
+          </div>
+        </div>
+        <div class="table-wrap" id="incTableWrap"><div class="empty-state">লোড হচ্ছে…</div></div>
+      </div>
+
       <!-- ---------- ORDERS REPORT ---------- -->
       <div class="report-pane" id="pane-orders">
         <div class="report-subnav" id="orderStatusTabs">
-          <button class="active" data-status="Pending">চলমান (Pending)</button>
+          <button class="active" data-status="New">নতুন অর্ডার</button>
+          <button data-status="Pending">বুকিং</button>
           <button data-status="Delivery">ডেলিভারি সম্পন্ন</button>
           <button data-status="Cancel">বাতিল</button>
         </div>
         <div class="table-toolbar">
           <button class="btn btn-outline btn-sm" id="ordersRefreshBtn">রিফ্রেশ</button>
           <button class="btn btn-outline btn-sm" id="ordersPrintBtn">🖨️ প্রিন্ট করুন</button>
+          <button class="btn btn-sm" id="ordersDeleteAllBtn" style="display:none;background:var(--danger);color:#fff;">🗑️ সকল ডিলেট</button>
         </div>
         <div class="table-wrap" id="ordersTableWrap"><div class="empty-state">লোড হচ্ছে…</div></div>
       </div>
@@ -896,6 +949,10 @@
                 <option value="Software">Software</option>
                 <option value="Website">Website</option>
                 <option value="Electronic">Electronic</option>
+                <option value="Cloth">Cloth</option>
+                <option value="Honey">Honey</option>
+                <option value="Oil">Oil</option>
+                <option value="Foods">Foods</option>
                 <option value="Others" selected>Others</option>
               </select>
             </div>
@@ -1127,6 +1184,7 @@
                 <div class="field full"><label>YouTube</label><input type="text" id="soYoutube"></div>
                 <div class="field full"><label>Instagram</label><input type="text" id="soInstagram"></div>
                 <div class="field full"><label>Twitter</label><input type="text" id="soTwitter"></div>
+                <div class="field full"><label>TikTok</label><input type="text" id="soTiktok"></div>
                 <div class="field full"><label>WhatsApp</label><input type="text" id="soWhatsapp" placeholder="01XXXXXXXXX অথবা লিংক"></div>
               </div>
               <div class="form-actions"><button class="btn btn-teal" id="soSaveBtn" type="button">সংরক্ষণ করুন</button></div>
@@ -1184,7 +1242,8 @@
           <button type="button" data-k="total">সর্বমোট&#8203;</button>
         </div>
         <div class="period-bar">
-          <div class="field"><label>তারিখ বাছুন</label><input type="date" id="rptDate"></div>
+          <div class="field"><label id="rptDateLabel">তারিখ বাছুন</label><input type="date" id="rptDate"></div>
+          <div class="field" id="rptToField" style="display:none;"><label>শেষ তারিখ</label><input type="date" id="rptDateTo"></div>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-outline btn-sm" id="rptRefreshBtn" type="button">রিফ্রেশ</button>
             <button class="btn btn-outline btn-sm" id="rptPrintBtn" type="button">🖨️ প্রিন্ট করুন</button>
@@ -1274,7 +1333,8 @@
           <button type="button" data-k="total">সর্বমোট&#8203;</button>
         </div>
             <div class="period-bar">
-              <div class="field"><label>তারিখ বাছুন</label><input type="date" id="crpDate"></div>
+              <div class="field"><label id="crpDateLabel">তারিখ বাছুন</label><input type="date" id="crpDate"></div>
+              <div class="field" id="crpToField" style="display:none;"><label>শেষ তারিখ</label><input type="date" id="crpDateTo"></div>
               <div style="display:flex;gap:8px;">
                 <button class="btn btn-outline btn-sm" id="crpRefreshBtn" type="button">রিফ্রেশ</button>
                 <button class="btn btn-outline btn-sm" id="crpPrintBtn" type="button">🖨️ প্রিন্ট করুন</button>
@@ -1395,9 +1455,14 @@
       <div class="field-error">ঠিকানা লিখুন</div>
     </div>
 
+    <div class="field" id="shopPriceField" style="display:none;">
+      <label for="shopPrice">বিক্রয় মূল্য (প্রতি ইউনিট) — পরিবর্তন করা যাবে</label>
+      <input type="number" id="shopPrice" min="0" step="any" inputmode="decimal">
+    </div>
+
     <div class="price-breakdown">
       <div class="price-row"><span>পণ্যের মূল্য</span><span id="modalSubtotal">০ টাকা</span></div>
-      <div class="price-row"><span>ডেলিভারি চার্জ</span><span id="modalDelivery">০ টাকা</span></div>
+      <div class="price-row" id="modalDeliveryRow"><span>ডেলিভারি চার্জ</span><span id="modalDelivery">০ টাকা</span></div>
       <div class="price-row total"><span>সর্বমোট</span><span id="modalTotal">০ টাকা</span></div>
     </div>
 
@@ -1540,6 +1605,7 @@ const I18N = {
   'আপনার দৈনন্দিন প্রয়োজন, এক ক্লিকে': 'Your daily needs, one click away',
   'পছন্দের পণ্য বেছে নিন, Buy Now চাপুন, ক্যাশ অন ডেলিভারিতে অর্ডার করুন': 'Pick your favourite products, press Buy Now, and order with Cash on Delivery',
   'সব ক্যাটাগরি': 'All categories',
+  'পছন্দের পণ্য পেতে ক্যাটাগরি সিলেক্ট করুন': 'Select a category to find your products',
   'আরো': 'See more',
   'কোনো পণ্য পাওয়া যায়নি': 'No products found',
   'পণ্য আনা যায়নি। পেজ রিফ্রেশ করুন।': 'Could not load products. Please refresh the page.',
@@ -1620,7 +1686,13 @@ const I18N = {
   'বাতিল': 'Cancel',
   'সংরক্ষণ করুন': 'Save',
   'লোড হচ্ছে…': 'Loading…',
-  'চলমান (Pending)': 'Running (Pending)',
+  'নতুন অর্ডার': 'New Orders',
+  'বুকিং': 'Booking',
+  'বুকিং অর্ডার': 'Booking Orders',
+  'কনফার্ম': 'Confirm',
+  'ডিলেট': 'Delete',
+  'সকল ডিলেট': 'Delete All',
+  'অ্যাকশন': 'Action',
   'ডেলিভারি সম্পন্ন': 'Delivered',
   'নতুন খরচ যুক্ত করুন': 'Add New Expense',
   'পণ্য ক্রয়': 'Product purchase',
@@ -1666,7 +1738,7 @@ const I18N = {
   'সহজ অর্ডার প্রসেস': 'Easy order process',
   // ড্যাশবোর্ড ও টেবিল
   'মোট অর্ডার': 'Total Orders',
-  'চলমান অর্ডার (Pending)': 'Running Orders (Pending)',
+  'নতুন অর্ডার সংখ্যা': 'New Orders',
   'বাতিল অর্ডার': 'Cancelled Orders',
   'মোট আয়': 'Total Income',
   'মোট ব্যয়': 'Total Expenses',
@@ -1842,13 +1914,13 @@ function ask(msg){ return confirm(t(msg)); }
 function printBrand(h){
   const _l = siteLogo();
   const logo = _l ? `<img src="${esc(_l)}" style="height:${h}px;width:auto;">` : '';
-  return `<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 4px;">${logo}<h2 style="margin:0;">${esc(SITE.name)}</h2></div>`;
+  return `<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 2px;line-height:1.15;">${logo}<h2 style="margin:0;line-height:1.15;">${esc(SITE.name)}</h2></div>`;
 }
 
 
 /* ---------- ওয়েবসাইট তথ্য (Settings → Web Info / Social) ---------- */
 const SITE_DEFAULT = { name:'ProyojonBD', address:'ফেনী সদর, ফেনী জেলা, বাংলাদেশ', mobile:'01605721296', mobile2:'', mobile3:'', email:'', logo:'', logoEn:'' };
-const SOCIAL_DEFAULT = { facebook:'https://web.facebook.com/abdul.momen.111408', youtube:'http://www.youtube.com/@abdulmomen69', instagram:'', twitter:'', whatsapp:'' };
+const SOCIAL_DEFAULT = { facebook:'https://web.facebook.com/abdul.momen.111408', youtube:'http://www.youtube.com/@abdulmomen69', instagram:'', twitter:'', tiktok:'', whatsapp:'' };
 let SITE = { ...SITE_DEFAULT };
 let SOCIAL = { ...SOCIAL_DEFAULT };
 
@@ -1857,6 +1929,7 @@ const SOCIAL_ICONS = {
   youtube:   { label:'YouTube', color:'#FF0000', svg:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.4a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58zM10 15.5v-7l6 3.5-6 3.5z"/></svg>' },
   instagram: { label:'Instagram', color:'#E4405F', svg:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>' },
   twitter:   { label:'Twitter', color:'#000000', svg:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>' },
+  tiktok:    { label:'TikTok', color:'#000000', svg:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 6.7a5 5 0 01-3.9-4.4V2h-3.5v13.4a2.9 2.9 0 11-2-2.8V9.1a6.4 6.4 0 105.5 6.3V8.9a8.5 8.5 0 004.9 1.6V7a5 5 0 01-1-.3z"/></svg>' },
   whatsapp:  { label:'WhatsApp', color:'#25D366', svg:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 01-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1121 11.5z"/></svg>' }
 };
 
@@ -1961,7 +2034,7 @@ let PRODUCTS = [];
 let currentProduct = null;
 let currentQty = 1;
 let lastOrderSnapshot = null;
-let currentReportStatus = "Pending";
+let currentReportStatus = "New";
 let _renderVersion = 0; // race condition prevent করার জন্য
 
 const toastEl = document.getElementById('toast');
@@ -2000,6 +2073,7 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
     document.getElementById('section-' + btn.dataset.section).classList.add('active');
     navbar.classList.remove('open');
     if (btn.dataset.section === 'report') checkAdminGate();
+    if (btn.dataset.section === 'home' && localStorage.getItem('proyojonbd_admin_unlocked') === 'yes') autoLockAdmin();
   });
 });
 
@@ -2127,6 +2201,13 @@ async function recVerify(){
 }
 recEl('recVerifyBtn').addEventListener('click', recVerify);
 recEl('recPin').addEventListener('keydown', e=>{ if (e.key === 'Enter') recVerify(); });
+// Home-এ ক্লিক করলে Authority অটো লক + সব খোলা ফরম বন্ধ
+function autoLockAdmin(){
+  ['resetIncForm','resetExpForm','resetInvForm','resetAdminForm'].forEach(fn=>{ try{ if (typeof window[fn] === 'function') window[fn](); }catch(e){} });
+  try{ resetIncForm(); }catch(e){}
+  ['buyModalScrim','lowStockScrim'].forEach(id=>{ const el = document.getElementById(id); if (el) el.classList.remove('open'); });
+  document.getElementById('lockAdminBtn').click();
+}
 document.getElementById('lockAdminBtn').addEventListener('click', ()=>{
   localStorage.removeItem('proyojonbd_admin_unlocked');
   localStorage.removeItem('proyojonbd_admin_name');
@@ -2154,6 +2235,8 @@ document.querySelectorAll('#reportSubnav button[data-pane]').forEach(btn=>{
     if (btn.dataset.pane === 'dashboard') loadDashboard();
     if (btn.dataset.pane === 'orders') loadOrdersReport();
     if (btn.dataset.pane === 'expense') loadExpenseReport();
+    if (btn.dataset.pane === 'shop') loadShopPane();
+    if (btn.dataset.pane === 'income') loadIncomes();
   });
 });
 
@@ -2471,7 +2554,7 @@ document.getElementById('categoryFilter')?.addEventListener('change', renderProd
 const buyModalScrim = document.getElementById('buyModalScrim');
 
 function fmtQty(n){ return String(Math.round(Number(n||0)*100)/100); }
-function unitSuffix(p){ return isMeasure(p) ? ' <small style="font-weight:600;color:var(--ink-soft);">/ ' + unitLabel(unitOf(p)) + '</small>' : ''; }
+function unitSuffix(p){ return ' <small style="font-weight:600;color:var(--ink-soft);">/ ' + (isMeasure(p) ? unitLabel(unitOf(p)) : 'Pcs') + '</small>'; }
 function orderQtyText(o){
   const q = esc(fmtQty(o.quantity));
   const ou = unitOf(o);
@@ -2499,7 +2582,20 @@ function fillOrderOptions(p){
   build('orderSizeField',  'orderSize',  'Size',  listOf(p.sizes),  'যেমন: M / 42');
 }
 
-function openBuyModal(id, finalPrice){
+let shopMode = false;
+function applyShopModeUI(){
+  document.getElementById('areaField').style.display = shopMode ? 'none' : '';
+  document.getElementById('addressField').style.display = shopMode ? 'none' : '';
+  document.getElementById('modalDeliveryRow').style.display = shopMode ? 'none' : '';
+  document.getElementById('shopPriceField').style.display = shopMode ? '' : 'none';
+  document.getElementById('buyModalTitle').textContent = shopMode ? 'Sales in Shop — বিক্রয় তথ্য' : 'অর্ডার তথ্য দিন';
+  document.getElementById('confirmBuyBtn').textContent = shopMode ? 'বিক্রি সম্পন্ন করুন' : 'অর্ডার কনফার্ম করুন';
+  document.querySelector('label[for="custName"]').textContent = shopMode ? 'কাস্টমারের নাম (ঐচ্ছিক)' : 'আপনার নাম';
+  document.querySelector('label[for="custPhone"]').textContent = shopMode ? 'মোবাইল নম্বর (ঐচ্ছিক)' : 'মোবাইল নম্বর';
+}
+function openBuyModal(id, finalPrice, shop){
+  shopMode = !!shop;
+  applyShopModeUI();
   currentProduct = PRODUCTS.find(p=>String(p.id)===String(id));
   if (!currentProduct) return;
   currentProduct._finalPrice = finalPrice || currentProduct.price;
@@ -2521,6 +2617,7 @@ function openBuyModal(id, finalPrice){
       <div class="modal-product-name">${currentProduct.name}</div>
       <div class="modal-product-price">${hasDisc ? `<span style="text-decoration:line-through;color:var(--ink-soft);font-weight:400;margin-right:6px;">${money(currentProduct.price)}</span>` : ''}${money(priceNow)}${unitSuffix(currentProduct)}</div>
     </div>`;
+  if (shopMode) document.getElementById('shopPrice').value = currentProduct._finalPrice;
   updateModalTotal();
   buyModalScrim.classList.add('open');
 }
@@ -2533,12 +2630,17 @@ function getSelectedDeliveryArea(){
 function updateModalTotal(){
   if (!isMeasure(currentProduct)) document.getElementById('qtyValue').textContent = currentQty;
   const subtotal = Math.round(currentProduct._finalPrice * currentQty * 100) / 100;
-  const deliveryCharge = DELIVERY_CHARGES[getSelectedDeliveryArea()];
+  const deliveryCharge = shopMode ? 0 : DELIVERY_CHARGES[getSelectedDeliveryArea()];
   document.getElementById('modalSubtotal').textContent = money(subtotal);
   document.getElementById('modalDelivery').textContent = money(deliveryCharge);
   document.getElementById('modalTotal').textContent = money(subtotal + deliveryCharge);
 }
 
+document.getElementById('shopPrice').addEventListener('input', ()=>{
+  if (!currentProduct) return;
+  currentProduct._finalPrice = Math.max(0, Number(document.getElementById('shopPrice').value) || 0);
+  updateModalTotal();
+});
 document.querySelectorAll('input[name="deliveryArea"]').forEach(radio=>{
   radio.addEventListener('change', updateModalTotal);
 });
@@ -2581,10 +2683,14 @@ document.getElementById('confirmBuyBtn').addEventListener('click', async ()=>{
   const phone = document.getElementById('custPhone').value;
   const address = document.getElementById('custAddress').value;
 
-  const nameOk = validateField('nameField', name);
-  const phoneOk = validateField('phoneField', phone);
-  const addressOk = validateField('addressField', address);
-  if (!nameOk || !phoneOk || !addressOk) return;
+  if (!shopMode){
+    const nameOk = validateField('nameField', name);
+    const phoneOk = validateField('phoneField', phone);
+    const addressOk = validateField('addressField', address);
+    if (!nameOk || !phoneOk || !addressOk) return;
+  } else if (!(Number(document.getElementById('shopPrice').value) > 0)){
+    showToast('সঠিক বিক্রয় মূল্য লিখুন'); document.getElementById('shopPrice').focus(); return;
+  }
 
   const kg = isMeasure(currentProduct);
   if (kg){
@@ -2598,12 +2704,13 @@ document.getElementById('confirmBuyBtn').addEventListener('click', async ()=>{
     if (sEl.tagName === 'SELECT' && !sEl.value){ showToast('Size বাছুন'); sEl.focus(); return; }
   }
   const subtotal = Math.round(currentProduct._finalPrice * currentQty * 100) / 100;
-  const deliveryArea = getSelectedDeliveryArea();
-  const deliveryCharge = DELIVERY_CHARGES[deliveryArea];
+  const deliveryArea = shopMode ? 'In Shop' : getSelectedDeliveryArea();
+  const deliveryCharge = shopMode ? 0 : DELIVERY_CHARGES[deliveryArea];
   const total = subtotal + deliveryCharge;
 
   const order = {
     customerName:name, phone, address,
+    salesProcess: shopMode ? 'Offline' : 'Online',
     productName: currentProduct.name,
     category: currentProduct.category || '',
     quantity: currentQty,
@@ -2616,7 +2723,7 @@ document.getElementById('confirmBuyBtn').addEventListener('click', async ()=>{
 
   const btn = document.getElementById('confirmBuyBtn');
   btn.disabled = true;
-  btn.textContent = 'অর্ডার হচ্ছে…';
+  btn.textContent = shopMode ? 'সংরক্ষণ হচ্ছে…' : 'অর্ডার হচ্ছে…';
 
   let result = { success:true, orderId:'PRY-' + Date.now(), timestamp:new Date().toISOString() };
   if (API_URL){
@@ -2625,8 +2732,19 @@ document.getElementById('confirmBuyBtn').addEventListener('click', async ()=>{
   }
 
   btn.disabled = false;
-  btn.textContent = 'অর্ডার কনফার্ম করুন';
+  btn.textContent = shopMode ? 'বিক্রি সম্পন্ন করুন' : 'অর্ডার কনফার্ম করুন';
   buyModalScrim.classList.remove('open');
+
+  if (shopMode){
+    ['custName','custPhone','custAddress'].forEach(i=> document.getElementById(i).value = '');
+    if (result && result.error){ showToast(result.error); return; }
+    showToast('বিক্রি সম্পন্ন — ডেলিভারি সম্পন্ন তালিকায় যুক্ত হয়েছে');
+    refreshLowStock();
+    if (ask('রসিদ এখনই প্রিন্ট করবেন?')){
+      printThermalInvoice({ ...order, orderId: result.orderId || '', timestamp: result.timestamp || new Date().toISOString() });
+    }
+    return;
+  }
 
   // সার্ভার যে চার্জ/মোট নির্ধারণ করেছে স্লিপে সেটাই দেখানো
   if (result && result.deliveryCharge !== undefined){
@@ -2648,46 +2766,14 @@ document.getElementById('confirmCloseBtn').addEventListener('click', ()=>{
   document.getElementById('confirmScrim').classList.remove('open');
 });
 
-/* ---------- অর্ডার স্লিপ প্রিন্ট ---------- */
+/* ---------- অর্ডার রসিদ প্রিন্ট (Delivery তালিকার থার্মাল রসিদের মতো) ---------- */
 document.getElementById('confirmPrintBtn').addEventListener('click', ()=>{
   if (!lastOrderSnapshot) return;
   const { order, result } = lastOrderSnapshot;
-  const date = new Date(result.timestamp || Date.now());
-  const win = window.open('', '_blank');
-  writeDoc(win, `
-    <html><head><title>অর্ডার স্লিপ</title>
-    <style>
-      body{ font-family:'Hind Siliguri', Arial, sans-serif; padding:24px; color:#22302B; max-width:380px; margin:0 auto; }
-      h2{ text-align:center; margin-bottom:0; color:#0F1322; }
-      .tag{ text-align:center; font-size:12px; color:#62716B; margin-bottom:18px; }
-      .row{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
-      hr{ border:none; border-top:1px dashed #ccc; margin:14px 0; }
-      .total{ font-weight:bold; font-size:15px; }
-      .center{ text-align:center; font-size:12px; color:#62716B; margin-top:16px; }
-    </style></head>
-    <body>
-      ${printBrand(44)}
-      <div class="tag" style="text-align:center;">${esc(siteMobiles().join(', '))}${SITE.email ? ' | ' + esc(SITE.email) : ''}</div>
-      <div class="tag" style="text-align:center;">📍 ${esc(SITE.address)}</div>
-      <div class="row"><span>অর্ডার আইডি</span><span>${result.orderId || ''}</span></div>
-      <div class="row"><span>তারিখ</span><span>${date.toLocaleDateString(dateLocale())} ${date.toLocaleTimeString(dateLocale())}</span></div>
-      <div class="row"><span>কাস্টমার</span><span>${order.customerName}</span></div>
-      <div class="row"><span>মোবাইল</span><span>${order.phone}</span></div>
-      <hr>
-      <div class="row"><span>${esc(order.productName)} ${order.unit !== 'PCS' ? '— ' + fmtQty(order.quantity) + ' ' + unitLabel(order.unit) : 'x' + order.quantity}</span><span>${order.subtotal} টাকা</span></div>
-      ${(order.unit === 'PCS' && (order.color || order.size)) ? `<div class="row"><span>Color / Size</span><span>${esc(order.color || '-')} / ${esc(order.size || '-')}</span></div>` : ''}
-      <div class="row"><span>ডেলিভারি এলাকা</span><span>${order.deliveryArea === 'Outside Feni' ? 'ফেনীর বাইরে' : 'ফেনীর ভেতরে'}</span></div>
-      <div class="row"><span>ডেলিভারি চার্জ</span><span>${order.deliveryCharge} টাকা</span></div>
-      <hr>
-      <div class="row total"><span>সর্বমোট</span><span>${order.total} টাকা</span></div>
-      <div class="center">ডেলিভারি ঠিকানা: ${order.address}</div>
-      <div class="center">ধন্যবাদ ${esc(SITE.name)}-র সাথে থাকার জন্য</div>
-      <hr>
-      <div class="center" style="font-size:11px;">${esc(SITE.name)} &nbsp;|&nbsp; ${esc(siteMobiles().join(', '))}</div>
-      <script>window.print();<\/script>
-    </body></html>
-  `);
-  win.document.close();
+  printThermalInvoice(
+    { ...order, orderId: result.orderId || '', timestamp: result.timestamp || new Date().toISOString() },
+    { title:'ORDER RECEIPT', credit:'@AM Shahed: 01605721296' }
+  );
 });
 
 /* ---------- জেনেরিক টেবিল প্রিন্ট ---------- */
@@ -2717,7 +2803,7 @@ function printTableWindow(title, theadHtml, tbodyHtml, tfootHtml){
     <style>
       body{ font-family:'Hind Siliguri', Arial, sans-serif; padding:20px; color:#1A1F36; }
       h2{ color:#1A1F36; margin-bottom:2px; text-align:center; }
-      .meta{ font-size:12px; color:#6B7280; margin-bottom:16px; text-align:center; }
+      .meta{ font-size:12px; color:#6B7280; margin:2px 0 8px; text-align:center; }
       table{ width:100%; border-collapse:collapse; font-size:12px; }
       th, td{ border:1px solid #ddd; padding:6px 8px; }
       th{ background:#EFEFEB; color:#1A1F36; text-align:center; }
@@ -2742,6 +2828,218 @@ function printTableWindow(title, theadHtml, tbodyHtml, tfootHtml){
   win.document.close();
 }
 
+/* ===================== SALES IN SHOP ===================== */
+async function loadShopPane(){
+  const wrap = document.getElementById('shopTableWrap');
+  if (!PRODUCTS || !PRODUCTS.length){
+    wrap.innerHTML = '<div class="empty-state">লোড হচ্ছে…</div>';
+    await loadProducts();
+  }
+  renderShopList();
+}
+function renderShopList(){
+  const wrap = document.getElementById('shopTableWrap');
+  const q = (document.getElementById('shopSearch').value || '').trim().toLowerCase();
+  const list = (PRODUCTS || []).filter(p=> !isHiddenProduct(p) && (!q || String(p.name||'').toLowerCase().includes(q) || String(p.category||'').toLowerCase().includes(q)));
+  if (!list.length){ wrap.innerHTML = '<div class="empty-state">কোনো পণ্য পাওয়া যায়নি</div>'; return; }
+  wrap.innerHTML = `<table class="data-table"><thead><tr><th>#</th><th>ছবি</th><th style="text-align:left;">পণ্য</th><th>ক্যাটাগরি</th><th>দাম</th><th></th></tr></thead><tbody>` +
+    list.map((p,i)=>{
+      const img = p.image ? p.image.split(',').map(u=>u.trim()).filter(Boolean)[0] : '';
+      const fp = productFinalPrice(p);
+      return `<tr><td>${i+1}</td><td>${img ? `<img src="${esc(img)}" alt="" style="width:42px;height:42px;object-fit:cover;border-radius:6px;">` : ''}</td>
+        <td style="text-align:left;">${esc(p.name)}</td><td>${esc(p.category||'')}</td>
+        <td>${money(fp)}${isMeasure(p) ? ' / ' + esc(unitLabel(unitOf(p))) : ' / Pcs'}</td>
+        <td class="row-actions"><button type="button" class="shop-buy" data-id="${esc(p.id)}">Buy Now</button></td></tr>`;
+    }).join('') + '</tbody></table>';
+  wrap.querySelectorAll('.shop-buy').forEach(b=> b.addEventListener('click', ()=>{
+    const p = PRODUCTS.find(x=> String(x.id) === b.dataset.id);
+    if (p) openBuyModal(p.id, productFinalPrice(p), true);
+  }));
+}
+document.getElementById('shopSearch').addEventListener('input', renderShopList);
+document.getElementById('shopRefreshBtn').addEventListener('click', async ()=>{ await loadProducts(); renderShopList(); });
+
+/* ===================== INCOME ===================== */
+let INCOMES = [];
+let _incEditNo = '';
+function incLineHtml(desc, amt){
+  return `<div class="form-grid inc-line" style="margin-top:6px;">
+    <div class="field" style="grid-column:span 2;"><label>Description</label><input type="text" class="inc-desc" value="${esc(desc||'')}"></div>
+    <div class="field"><label>Amount</label><div style="display:flex;gap:6px;"><input type="number" class="inc-amt" min="0" step="any" inputmode="decimal" value="${amt===undefined||amt===''?'':esc(amt)}" style="flex:1;min-width:0;"><button type="button" class="btn btn-outline btn-sm inc-rm" title="মুছুন">✕</button></div></div>
+  </div>`;
+}
+function incCalcTotal(){
+  let t = 0; document.querySelectorAll('#incLines .inc-amt').forEach(i=> t += Number(i.value) || 0);
+  document.getElementById('incTotal').textContent = fmtN(t);
+}
+function incNextInvoice(){
+  let max = 0;
+  INCOMES.forEach(x=>{ const m = String(x.invoiceNo||'').match(/(\d+)\s*$/); if (m) max = Math.max(max, parseInt(m[1],10)); });
+  return 'INC-' + String(max + 1).padStart(4,'0');
+}
+function incSetLines(items){
+  document.getElementById('incLines').innerHTML = (items && items.length ? items : [{}]).map(it=> incLineHtml(it.description, it.amount)).join('');
+  incCalcTotal();
+}
+function resetIncForm(){
+  _incEditNo = '';
+  document.getElementById('incDate').value = todayStr();
+  document.getElementById('incInvoice').value = incNextInvoice();
+  incSetLines([]);
+  document.getElementById('incSaveBtn').textContent = 'সংরক্ষণ করুন';
+}
+document.getElementById('incLines').addEventListener('input', incCalcTotal);
+document.getElementById('incLines').addEventListener('click', e=>{
+  const b = e.target.closest('.inc-rm'); if (!b) return;
+  const lines = document.querySelectorAll('#incLines .inc-line');
+  if (lines.length <= 1){ b.closest('.inc-line').querySelectorAll('input').forEach(i=> i.value=''); }
+  else b.closest('.inc-line').remove();
+  incCalcTotal();
+});
+document.getElementById('incAddLineBtn').addEventListener('click', ()=>{
+  document.getElementById('incLines').insertAdjacentHTML('beforeend', incLineHtml('', ''));
+  const l = document.querySelectorAll('#incLines .inc-desc'); l[l.length-1].focus();
+});
+function closeIncForm(){
+  resetIncForm();
+  const acc = document.querySelector('.acc[data-acc="incomeform"]');
+  acc.classList.remove('open');
+  const b = acc.querySelector(':scope > .acc-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+}
+document.getElementById('incCancelBtn').addEventListener('click', closeIncForm);
+async function loadIncomes(){
+  if (!API_URL){ document.getElementById('incTableWrap').innerHTML = '<div class="empty-state">Apps Script URL যুক্ত করা হলে এখানে Income দেখা যাবে।</div>'; return; }
+  try{ INCOMES = (await apiGet('action=incomes')).incomes || []; }
+  catch(e){ showToast('Income তালিকা আনা যায়নি'); }
+  if (!_incEditNo) document.getElementById('incInvoice').value = incNextInvoice();
+  if (!document.getElementById('incDate').value) document.getElementById('incDate').value = todayStr();
+  if (!document.querySelector('#incLines .inc-line')) incSetLines([]);
+  renderIncomes();
+}
+function renderIncomes(){
+  const wrap = document.getElementById('incTableWrap');
+  if (!INCOMES.length){ wrap.innerHTML = '<div class="empty-state">এখনো কোনো Income যুক্ত হয়নি</div>'; return; }
+  wrap.innerHTML = `<table class="data-table"><thead><tr><th class="col-inv">Invoice</th><th>Date</th><th style="text-align:left;">Description</th><th>Amount</th><th></th></tr></thead><tbody>` +
+    INCOMES.map(x=>`<tr><td class="col-inv">${esc(x.invoiceNo)}</td><td>${dmy(x.date)}</td>
+      <td style="text-align:left;">${(x.items||[]).map(it=> esc(it.description||'—') + ' (' + fmtN(it.amount) + ')').join('<br>')}</td>
+      <td>${fmtN(x.total)}</td>
+      <td class="row-actions"><div class="act-wrap"><button type="button" data-iprint="${esc(x.invoiceNo)}">🖨️ Print</button><button type="button" data-iedit="${esc(x.invoiceNo)}">Edit</button><button type="button" class="danger" data-idel="${esc(x.invoiceNo)}">Delete</button></div></td></tr>`).join('') +
+    `</tbody><tfoot><tr><td colspan="3">সর্বমোট</td><td>${fmtN(sumBy(INCOMES,x=>x.total))}</td><td></td></tr></tfoot></table>`;
+}
+document.getElementById('incSaveBtn').addEventListener('click', async ()=>{
+  const items = Array.from(document.querySelectorAll('#incLines .inc-line')).map(l=>({
+    description: l.querySelector('.inc-desc').value.trim(), amount: Number(l.querySelector('.inc-amt').value) || 0
+  })).filter(it=> it.amount > 0);
+  if (!items.length){ showToast('কমপক্ষে একটি সঠিক Amount লিখুন'); return; }
+  const income = { date: document.getElementById('incDate').value || todayStr(), items };
+  const editing = !!_incEditNo;
+  try{
+    const res = await withBusy(document.getElementById('incSaveBtn'), 'সংরক্ষণ হচ্ছে…', ()=>
+      apiPost(editing ? { action:'updateIncome', invoiceNo:_incEditNo, income } : { action:'addIncome', income }));
+    if (res.error) throw new Error(res.error);
+    showToast(editing ? 'Income আপডেট হয়েছে' : 'Income যুক্ত হয়েছে');
+    if (editing) closeIncForm(); else resetIncForm();
+    await loadIncomes();
+    if (!editing && res.income && ask('Invoice এখনই প্রিন্ট করবেন?')) printIncomeInvoice(res.income);
+  }catch(err){ showToast(err.message || 'সংরক্ষণ করা যায়নি'); }
+});
+document.getElementById('incTableWrap').addEventListener('click', async e=>{
+  const pb = e.target.closest('[data-iprint]'), eb = e.target.closest('[data-iedit]'), db = e.target.closest('[data-idel]');
+  if (pb){ const x = INCOMES.find(i=> i.invoiceNo === pb.dataset.iprint); if (x) printIncomeInvoice(x); return; }
+  if (eb){
+    const x = INCOMES.find(i=> i.invoiceNo === eb.dataset.iedit); if (!x) return;
+    _incEditNo = x.invoiceNo;
+    openAccSection('incomeform');
+    document.getElementById('incDate').value = x.date || todayStr();
+    document.getElementById('incInvoice').value = x.invoiceNo;
+    incSetLines(x.items);
+    document.getElementById('incSaveBtn').textContent = 'আপডেট করুন';
+    document.getElementById('incDate').scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+  if (db){
+    if (!ask('এই Income Invoice-টি মুছে ফেলবেন?')) return;
+    try{
+      const res = await apiPost({ action:'deleteIncome', invoiceNo: db.dataset.idel });
+      if (res && res.error) throw new Error(res.error);
+      showToast('মুছে ফেলা হয়েছে');
+      if (_incEditNo === db.dataset.idel) closeIncForm();
+      loadIncomes();
+    }catch(err){ showToast(err.message || 'মোছা যায়নি'); }
+  }
+});
+function printIncomeInvoice(x){
+  const win = window.open('', '_blank');
+  if (!win){ showToast('পপআপ ব্লক করা আছে, অনুমতি দিন'); return; }
+  const rows = (x.items||[]).map((it,i)=>`<tr><td style="text-align:center">${i+1}</td><td>${esc(it.description||'')}</td><td style="text-align:right">${fmtN(it.amount)}</td></tr>`).join('');
+  writeDoc(win, `<html><head><title>Income ${esc(x.invoiceNo)}</title>
+    <style>
+      body{ font-family:'Hind Siliguri', Arial, sans-serif; padding:24px; color:#1A1F36; max-width:700px; margin:0 auto; }
+      .c{ text-align:center; font-size:12px; color:#6B7280; }
+      .ttl{ text-align:center; font-weight:bold; margin:6px 0 8px; font-size:16px; border-top:1px solid #ccc; border-bottom:1px solid #ccc; padding:6px 0; }
+      .meta{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; }
+      table{ width:100%; border-collapse:collapse; font-size:13px; } th,td{ border:1px solid #ccc; padding:6px 8px; } th{ background:#EFEFEB; }
+      tfoot td{ font-weight:bold; background:#F5F5F0; }
+      .words{ margin-top:10px; font-size:13px; }
+      .sign{ display:flex; justify-content:space-between; margin-top:60px; font-size:13px; } .sign div{ width:200px; text-align:center; border-top:1px solid #333; padding-top:6px; }
+    </style></head><body>
+    ${printBrand(44)}
+    <div class="c">${esc(SITE.address)}${SITE.mobile ? ' | ' + esc(siteMobiles().join(', ')) : ''}${SITE.email ? ' | ' + esc(SITE.email) : ''}</div>
+    <div class="ttl">INCOME INVOICE</div>
+    <div class="meta"><div><b>Invoice No:</b> ${esc(x.invoiceNo)}</div><div><b>Date:</b> ${esc(dmy(x.date))}</div></div>
+    <table><thead><tr><th style="width:40px;">#</th><th>Description</th><th style="width:140px;">Amount (Tk)</th></tr></thead><tbody>${rows}</tbody>
+    <tfoot><tr><td colspan="2" style="text-align:right;">Total</td><td style="text-align:right;">${fmtN(x.total)}</td></tr></tfoot></table>
+    <div class="words"><b>In Words:</b> ${amountInWords(x.total)}</div>
+    <div class="sign"><div>Received By</div><div>Authority</div></div>
+    <script>window.print();<\/script></body></html>`);
+  win.document.close();
+}
+
+/* ===================== আয়-ব্যয়ের হিসাব ===================== */
+// ক্রয় মূল্য: Purchase-এর গড় ইউনিট খরচ (Purchase ডিসকাউন্টসহ), পণ্যের নাম মিলিয়ে
+function buildCostMap(purchases){
+  const m = {};
+  (purchases || []).forEach(p=>{
+    const ratio = Number(p.total) > 0 ? (Number(p.payable) || 0) / Number(p.total) : 1;
+    (p.items || []).forEach(it=>{
+      const k = String(it.name || '').trim().toLowerCase();
+      if (!k) return;
+      (m[k] = m[k] || { amt:0, qty:0 });
+      m[k].amt += (Number(it.amount) || 0) * ratio;
+      m[k].qty += Number(it.qty) || 0;
+    });
+  });
+  return m;
+}
+function unitCost(map, name){
+  const x = map[String(name || '').trim().toLowerCase()];
+  return x && x.qty > 0 ? x.amt / x.qty : 0;
+}
+// আয় সোর্স: পণ্য বিক্রি (অনলাইন, ডেলিভারি সম্পন্ন) + ডেলিভারি চার্জ + Sales in Shop (Offline) + Income (ম্যানুয়াল এন্ট্রি)
+// ব্যয়: পণ্য ক্রয় (Purchase Payable) + খরচ (Expenses) | নিট লাভ = মোট আয় − মোট ব্যয়
+function calcAccounts(orders, expenses, costMap, purchasesInRange, incomes){
+  const done = (orders || []).filter(o=> o.status === 'Delivery');
+  let online = 0, shop = 0, cogs = 0, delivery = 0, dIn = 0, dOut = 0;
+  done.forEach(o=>{
+    const sub = Number(o.subtotal) || 0;
+    if (o.salesProcess === 'Offline') shop += sub; else online += sub;
+    cogs  += unitCost(costMap, o.productName) * (Number(o.quantity) || 0);
+    const dc = Number(o.deliveryCharge) || 0;
+    delivery += dc;
+    if (o.deliveryArea === 'Outside Feni') dOut += dc; else if (o.deliveryArea !== 'In Shop') dIn += dc;
+  });
+  const r = x=> Math.round(x * 100) / 100;
+  const manual = (incomes || []).reduce((a,x)=> a + (Number(x.total) || 0), 0);
+  const sales = online + shop;
+  const income = online + delivery + shop + manual;
+  const expOnly = (expenses || []).reduce((a,e)=> a + (Number(e.amount) || 0), 0);
+  const purchase = (purchasesInRange || []).reduce((a,p)=> a + (Number(p.payable) || 0), 0);
+  const expense = purchase + expOnly;
+  return { done, online:r(online), shop:r(shop), sales:r(sales), cogs:r(cogs), productProfit:r(sales - cogs),
+           delivery:r(delivery), dIn:r(dIn), dOut:r(dOut), manual:r(manual),
+           income:r(income), expOnly:r(expOnly), purchase:r(purchase), expense:r(expense), net:r(income - expense) };
+}
+
 /* ===================== DASHBOARD ===================== */
 async function loadDashboard(){
   const grid = document.getElementById('statGrid');
@@ -2749,32 +3047,42 @@ async function loadDashboard(){
   if (!API_URL){ grid.innerHTML = `<div class="empty-state">Apps Script URL যুক্ত করা হলে এখানে ড্যাশবোর্ড দেখা যাবে।</div>`; return; }
 
   try{
-    const [ordersData, expData] = await Promise.all([
+    const [ordersData, expData, purData, incData] = await Promise.all([
       apiGet('action=orders'),
-      apiGet('action=expenses')
+      apiGet('action=expenses'),
+      apiGet('action=purchases'),
+      apiGet('action=incomes')
     ]);
     const orders = ordersData.orders || [];
     const expenses = expData.expenses || [];
+    const purchases = purData.purchases || [];
 
     const totalOrders = orders.length;
+    const newOrders = orders.filter(o=>o.status==='New').length;
     const running = orders.filter(o=>o.status==='Pending').length;
     const delivered = orders.filter(o=>o.status==='Delivery').length;
     const cancelled = orders.filter(o=>o.status==='Cancel').length;
-    const totalIncome = orders.filter(o=>o.status!=='Cancel').reduce((s,o)=> s+(Number(o.total)||0), 0);
-    const totalExpense = expenses.reduce((s,e)=> s+(Number(e.amount)||0), 0);
-    const netProfit = totalIncome - totalExpense;
+    const acc = calcAccounts(orders, expenses, buildCostMap(purchases), purchases, incData.incomes || []);
+    const totalIncome = acc.income, totalExpense = acc.expense, netProfit = acc.net;
 
     grid.innerHTML = `
       <div class="stat-card"><div class="label">মোট অর্ডার</div><div class="value">${totalOrders}</div></div>
-      <div class="stat-card warn"><div class="label">চলমান অর্ডার (Pending)</div><div class="value">${running}</div></div>
+      <div class="stat-card warn"><div class="label">নতুন অর্ডার</div><div class="value">${newOrders}</div></div>
+      <div class="stat-card warn"><div class="label">বুকিং অর্ডার</div><div class="value">${running}</div></div>
       <div class="stat-card"><div class="label">ডেলিভারি সম্পন্ন</div><div class="value">${delivered}</div></div>
       <div class="stat-card danger"><div class="label">বাতিল অর্ডার</div><div class="value">${cancelled}</div></div>
+      <div class="stat-card"><div class="label">পণ্য বিক্রি (অনলাইন)</div><div class="value">${money(acc.online)}</div></div>
+      <div class="stat-card"><div class="label">ডেলিভারি চার্জ</div><div class="value">${money(acc.delivery)}</div></div>
+      <div class="stat-card"><div class="label">Sales in Shop</div><div class="value">${money(acc.shop)}</div></div>
+      <div class="stat-card"><div class="label">Income (অন্যান্য আয়)</div><div class="value">${money(acc.manual)}</div></div>
+      <div class="stat-card danger"><div class="label">পণ্য ক্রয়</div><div class="value">${money(acc.purchase)}</div></div>
+      <div class="stat-card danger"><div class="label">খরচ</div><div class="value">${money(acc.expOnly)}</div></div>
       <div class="stat-card"><div class="label">মোট আয়</div><div class="value">${money(totalIncome)}</div></div>
       <div class="stat-card danger"><div class="label">মোট ব্যয়</div><div class="value">${money(totalExpense)}</div></div>
-      <div class="stat-card profit"><div class="label">নিট মুনাফা</div><div class="value">${money(netProfit)}</div></div>
+      <div class="stat-card ${netProfit < 0 ? 'danger' : 'profit'}"><div class="label">${netProfit < 0 ? 'নিট ক্ষতি (Loss)' : 'নিট লাভ (Profit)'}</div><div class="value">${money(Math.abs(netProfit))}</div></div>
     `;
 
-    window._dashboardSnapshot = { totalOrders, running, delivered, cancelled, totalIncome, totalExpense, netProfit };
+    window._dashboardSnapshot = { totalOrders, newOrders, running, purchase:acc.purchase, online:acc.online, shop:acc.shop, manual:acc.manual, expOnly:acc.expOnly, delivery:acc.delivery, delivered, cancelled, totalIncome, totalExpense, netProfit };
   }catch(err){
     grid.innerHTML = `<div class="empty-state">ড্যাশবোর্ড লোড করা যায়নি</div>`;
   }
@@ -2787,12 +3095,19 @@ document.getElementById('dashboardPrintBtn').addEventListener('click', ()=>{
     '<tr><th>বিষয়</th><th>মান</th></tr>',
     `
     <tr><td>মোট অর্ডার</td><td>${d.totalOrders}</td></tr>
-    <tr><td>চলমান অর্ডার (Pending)</td><td>${d.running}</td></tr>
+    <tr><td>নতুন অর্ডার</td><td>${d.newOrders}</td></tr>
+    <tr><td>বুকিং অর্ডার</td><td>${d.running}</td></tr>
     <tr><td>ডেলিভারি সম্পন্ন</td><td>${d.delivered}</td></tr>
     <tr><td>বাতিল অর্ডার</td><td>${d.cancelled}</td></tr>
+    <tr><td>পণ্য বিক্রি (অনলাইন)</td><td>${d.online} টাকা</td></tr>
+    <tr><td>ডেলিভারি চার্জ</td><td>${d.delivery} টাকা</td></tr>
+    <tr><td>Sales in Shop</td><td>${d.shop} টাকা</td></tr>
+    <tr><td>Income (অন্যান্য আয়)</td><td>${d.manual} টাকা</td></tr>
+    <tr><td>পণ্য ক্রয়</td><td>${d.purchase} টাকা</td></tr>
+    <tr><td>খরচ</td><td>${d.expOnly} টাকা</td></tr>
     <tr><td>মোট আয়</td><td>${d.totalIncome} টাকা</td></tr>
-    <tr><td>মোট ব্যয়</td><td>${d.totalExpense} টাকা</td></tr>
-    <tr><td>নিট মুনাফা</td><td>${d.netProfit} টাকা</td></tr>
+    <tr><td>মোট ব্যয় (ক্রয় + খরচ)</td><td>${d.totalExpense} টাকা</td></tr>
+    <tr><td>${d.netProfit < 0 ? 'নিট ক্ষতি (Loss)' : 'নিট লাভ (Profit)'}</td><td>${Math.abs(d.netProfit)} টাকা</td></tr>
     `
   );
 });
@@ -3117,6 +3432,19 @@ document.querySelectorAll('#orderStatusTabs button').forEach(tab=>{
   });
 });
 document.getElementById('ordersRefreshBtn').addEventListener('click', loadOrdersReport);
+document.getElementById('ordersDeleteAllBtn').addEventListener('click', async ()=>{
+  if (!_currentOrdersList.length) return;
+  if (!ask('বাতিল তালিকার সকল অর্ডার একসাথে মুছে ফেলবেন? এটি আর ফেরানো যাবে না।')) return;
+  const btn = document.getElementById('ordersDeleteAllBtn');
+  btn.disabled = true;
+  try{
+    const res = await apiPost({ action:'deleteCancelledOrders' });
+    if (res && res.error) throw new Error(res.error);
+    showToast('বাতিল তালিকার সকল অর্ডার মুছে ফেলা হয়েছে');
+    await loadOrdersReport();
+  }catch(err){ showToast(err.message || 'মোছা যায়নি'); }
+  btn.disabled = false;
+});
 
 async function loadOrdersReport(){
   const wrap = document.getElementById('ordersTableWrap');
@@ -3132,20 +3460,23 @@ async function loadOrdersReport(){
   }
 }
 
+function areaText(o){ return o.deliveryArea==='In Shop' ? 'শপ' : (o.deliveryArea==='Outside Feni'?'ফেনীর বাইরে':'ফেনীর ভেতরে'); }
 function statusPillClass(status){
   const s = (status||'').toLowerCase();
   if (s==='delivery') return 'delivery';
   if (s==='cancel') return 'cancel';
-  return 'pending';
+  return 'pending';   // New ও Pending (বুকিং)
 }
 
 function renderOrdersTable(){
   const wrap = document.getElementById('ordersTableWrap');
+  document.getElementById('ordersDeleteAllBtn').style.display = (currentReportStatus === 'Cancel' && _currentOrdersList.length) ? '' : 'none';
   if (!_currentOrdersList.length){ wrap.innerHTML = `<div class="empty-state">এই স্ট্যাটাসে কোনো অর্ডার নেই</div>`; return; }
+  const isNew = currentReportStatus === 'New';
 
   wrap.innerHTML = `
     <table class="data-table">
-      <thead><tr><th>অর্ডার আইডি</th><th>তারিখ</th><th>কাস্টমার</th><th>মোবাইল</th><th>পণ্য</th><th>পরিমাণ</th><th>এলাকা</th><th>ঠিকানা</th><th>সাবটোটাল</th><th>ডেলিভারি</th><th>মোট</th><th>স্ট্যাটাস</th>${currentReportStatus === 'Delivery' ? '<th>Invoice</th>' : ''}</tr></thead>
+      <thead><tr><th>অর্ডার আইডি</th><th>তারিখ</th><th>কাস্টমার</th><th>মোবাইল</th><th>পণ্য</th><th>পরিমাণ</th><th>এলাকা</th><th>ঠিকানা</th><th>সাবটোটাল</th><th>ডেলিভারি</th><th>মোট</th>${currentReportStatus === 'Delivery' ? '<th>Sales Process</th>' : ''}${isNew ? '<th>অ্যাকশন</th>' : '<th>স্ট্যাটাস</th>'}${currentReportStatus === 'Delivery' ? '<th>Invoice</th>' : ''}${currentReportStatus === 'Cancel' ? '<th>অ্যাকশন</th>' : ''}</tr></thead>
       <tbody>
         ${_currentOrdersList.map(o=>`
           <tr>
@@ -3155,19 +3486,21 @@ function renderOrdersTable(){
             <td>${o.phone||''}</td>
             <td>${o.productName||''}</td>
             <td>${orderQtyText(o)}</td>
-            <td>${o.deliveryArea==='Outside Feni'?'ফেনীর বাইরে':'ফেনীর ভেতরে'}</td>
+            <td>${areaText(o)}</td>
             <td>${o.address||''}</td>
             <td>${money(o.subtotal)}</td>
             <td>${money(o.deliveryCharge)}</td>
             <td>${money(o.total)}</td>
-            <td>
+            ${currentReportStatus === 'Delivery' ? `<td>${o.salesProcess === 'Offline' ? 'Offline' : 'Online'}</td>` : ''}
+            ${isNew ? `<td class="row-actions"><div class="act-wrap"><button type="button" class="ord-confirm" data-orderid="${esc(o.orderId)}">✅ কনফার্ম</button><button type="button" class="danger ord-del" data-orderid="${esc(o.orderId)}">ডিলেট</button></div></td>` : `<td>
               <select class="status-select ${statusPillClass(o.status)}" data-orderid="${o.orderId}">
-                <option value="Pending"  ${o.status==='Pending' ?'selected':''}>⏳ Pending</option>
+                <option value="Pending"  ${o.status==='Pending' ?'selected':''}>⏳ বুকিং</option>
                 <option value="Delivery" ${o.status==='Delivery'?'selected':''}>✅ Delivery</option>
                 <option value="Cancel"   ${o.status==='Cancel'  ?'selected':''}>❌ Cancel</option>
               </select>
-            </td>
+            </td>`}
             ${currentReportStatus === 'Delivery' ? `<td class="row-actions"><button type="button" class="ord-print" data-orderid="${esc(o.orderId)}">🖨️ Print</button></td>` : ''}
+            ${currentReportStatus === 'Cancel' ? `<td class="row-actions"><button type="button" class="danger ord-del" data-orderid="${esc(o.orderId)}">ডিলেট</button></td>` : ''}
           </tr>`).join('')}
       </tbody>
     </table>`;
@@ -3176,6 +3509,31 @@ function renderOrdersTable(){
     b.addEventListener('click', ()=>{
       const o = _currentOrdersList.find(x=> String(x.orderId) === b.dataset.orderid);
       if (o) printThermalInvoice(o);
+    });
+  });
+
+  wrap.querySelectorAll('.ord-confirm').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      b.disabled = true;
+      try{
+        const res = await apiPost({ action:'updateOrderStatus', orderId:b.dataset.orderid, status:'Pending' });
+        if (res && res.error) throw new Error(res.error);
+        showToast('অর্ডার কনফার্ম হয়েছে → বুকিং');
+        await loadOrdersReport();
+        refreshLowStock();
+      }catch(err){ showToast(err.message || 'কনফার্ম করা যায়নি'); b.disabled = false; }
+    });
+  });
+  wrap.querySelectorAll('.ord-del').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if (!ask('এই অর্ডারটি একদম মুছে ফেলবেন?')) return;
+      b.disabled = true;
+      try{
+        const res = await apiPost({ action:'deleteOrder', orderId:b.dataset.orderid });
+        if (res && res.error) throw new Error(res.error);
+        showToast('অর্ডার মুছে ফেলা হয়েছে');
+        await loadOrdersReport();
+      }catch(err){ showToast(err.message || 'মোছা যায়নি'); b.disabled = false; }
     });
   });
 
@@ -3201,8 +3559,9 @@ function renderOrdersTable(){
 
 /* ---------- থার্মাল ইনভয়েস (Delivery তালিকা) ---------- */
 const THERMAL_MM = 80;   // 58mm প্রিন্টার হলে এখানে 58 করুন
-function printThermalInvoice(o){
-  const win = window.open('', '_blank');
+function printThermalInvoice(o, opt2){
+  opt2 = opt2 || {};
+  const win = window.open('', '_blank', 'width=420,height=680,scrollbars=yes,resizable=yes');
   if (!win){ showToast('পপআপ ব্লক করা আছে — অনুমতি দিন'); return; }
   const d = o.timestamp ? new Date(o.timestamp) : new Date();
   const dt = d.toLocaleDateString(dateLocale()) + ' ' + d.toLocaleTimeString(dateLocale());
@@ -3210,15 +3569,18 @@ function printThermalInvoice(o){
   const qtyTxt = fmtQty(o.quantity) + (u !== 'PCS' ? ' ' + unitLabel(u) : '');
   const opt = (u === 'PCS' && (o.color || o.size)) ? `<div class="s">${esc([o.color, o.size].filter(Boolean).join(' / '))}</div>` : '';
   const w = THERMAL_MM;
+  const offl = o.salesProcess === 'Offline' || o.deliveryArea === 'In Shop';
   writeDoc(win, `<html><head><title>Invoice ${esc(o.orderId)}</title>
     <style>
-      @page{ size:${w}mm auto; margin:0; }
+      @page{ size:${w}mm 200mm; margin:0; }
+      html{ background:#e5e7eb; } body{ background:#fff; }
+      @media print{ html{ background:#fff; } }
       *{ box-sizing:border-box; }
-      body{ font-family:'Hind Siliguri', Arial, sans-serif; width:${w}mm; margin:0 auto; padding:3mm ${w >= 80 ? 4 : 2}mm; color:#000; font-size:${w >= 80 ? 12 : 11}px; line-height:1.35; }
+      body{ font-family:'Hind Siliguri', Arial, sans-serif; width:${w}mm; margin:0 auto; padding:2mm ${w >= 80 ? 4 : 2}mm; color:#000; font-size:${w >= 80 ? 12 : 11}px; line-height:1.35; }
       .c{ text-align:center; } .s{ font-size:0.88em; }
       h2{ margin:0; font-size:1.35em; text-align:center; }
       .brand img{ max-width:60%; height:auto; }
-      hr{ border:none; border-top:1px dashed #000; margin:5px 0; }
+      hr{ border:none; border-top:1px dashed #000; margin:4px 0; }
       .r{ display:flex; justify-content:space-between; gap:6px; } .r span:last-child{ text-align:right; }
       .t{ font-weight:bold; font-size:1.15em; }
       .addr{ word-break:break-word; }
@@ -3227,32 +3589,37 @@ function printThermalInvoice(o){
     <div class="c s">${esc(siteMobiles().join(', '))}</div>
     <div class="c s">${esc(SITE.address)}</div>
     <hr>
-    <div class="c"><b>DELIVERY INVOICE</b></div>
+    <div class="c"><b>${opt2.title || (offl ? 'SALES INVOICE' : 'DELIVERY INVOICE')}</b></div>
     <div class="r s"><span>Order ID</span><span>${esc(o.orderId)}</span></div>
     <div class="r s"><span>Date</span><span>${esc(dt)}</span></div>
     <hr>
     <div class="r"><span>Customer</span><span>${esc(o.customerName)}</span></div>
-    <div class="r"><span>Mobile</span><span>${esc(o.phone)}</span></div>
-    <div class="addr s">Address: ${esc(o.address)}</div>
+    ${o.phone ? `<div class="r"><span>Mobile</span><span>${esc(o.phone)}</span></div>` : ''}
+    ${(!offl && o.address) ? `<div class="addr s">Address: ${esc(o.address)}</div>` : ''}
     <hr>
     <div><b>${esc(o.productName)}</b></div>
     ${opt}
     <div class="r"><span>${esc(qtyTxt)} × ${fmtN(o.unitPrice)}</span><span>${fmtN(o.subtotal)}</span></div>
     <hr>
     <div class="r"><span>Subtotal</span><span>${fmtN(o.subtotal)}</span></div>
-    <div class="r"><span>Delivery (${o.deliveryArea === 'Outside Feni' ? 'Outside Feni' : 'Inside Feni'})</span><span>${fmtN(o.deliveryCharge)}</span></div>
+    ${offl ? '' : `<div class="r"><span>Delivery (${o.deliveryArea === 'Outside Feni' ? 'Outside Feni' : 'Inside Feni'})</span><span>${fmtN(o.deliveryCharge)}</span></div>`}
     <hr>
     <div class="r t"><span>Total</span><span>${fmtN(o.total)} Tk</span></div>
     <hr>
     <div class="c s">ধন্যবাদ ${esc(SITE.name)}-র সাথে থাকার জন্য</div>
-    <script>window.onload=function(){ window.print(); };<\/script></body></html>`);
+    ${opt2.credit ? `<hr><div class="c s">${esc(opt2.credit)}</div>` : ''}
+    <script>window.onload=function(){
+      var h = Math.ceil(document.body.getBoundingClientRect().height * 25.4 / 96) + 4;
+      var st = document.createElement('style'); st.textContent = '@page{ size:${w}mm ' + h + 'mm; margin:0; }'; document.head.appendChild(st);
+      setTimeout(function(){ window.print(); }, 50);
+    };<\/script></body></html>`);
   win.document.close();
 }
 
 document.getElementById('ordersPrintBtn').addEventListener('click', ()=>{
   printTableWindow('অর্ডার রিপোর্ট — ' + currentReportStatus,
-    '<tr><th>অর্ডার আইডি</th><th>তারিখ</th><th>কাস্টমার</th><th>মোবাইল</th><th>পণ্য</th><th>পরিমাণ</th><th>ডেলিভারি এলাকা</th><th>ঠিকানা</th><th>মোট</th><th>স্ট্যাটাস</th></tr>',
-    _currentOrdersList.map(o=>`<tr><td>${o.orderId||''}</td><td>${o.timestamp?new Date(o.timestamp).toLocaleDateString(dateLocale()):''}</td><td>${o.customerName||''}</td><td>${o.phone||''}</td><td>${o.productName||''}</td><td>${orderQtyText(o)}</td><td>${o.deliveryArea==='Outside Feni'?'ফেনীর বাইরে':'ফেনীর ভেতরে'}</td><td>${o.address||''}</td><td>${o.total||0} টাকা</td><td>${o.status||''}</td></tr>`).join('')
+    '<tr><th>অর্ডার আইডি</th><th>তারিখ</th><th>কাস্টমার</th><th>মোবাইল</th><th>পণ্য</th><th>পরিমাণ</th><th>ডেলিভারি এলাকা</th><th>ঠিকানা</th><th>মোট</th><th>স্ট্যাটাস</th>' + (currentReportStatus === 'Delivery' ? '<th>Sales Process</th>' : '') + '</tr>',
+    _currentOrdersList.map(o=>`<tr><td>${o.orderId||''}</td><td>${o.timestamp?new Date(o.timestamp).toLocaleDateString(dateLocale()):''}</td><td>${o.customerName||''}</td><td>${o.phone||''}</td><td>${o.productName||''}</td><td>${orderQtyText(o)}</td><td>${areaText(o)}</td><td>${o.address||''}</td><td>${o.total||0} টাকা</td><td>${o.status==='New'?'নতুন':o.status==='Pending'?'বুকিং':(o.status||'')}</td>${currentReportStatus === 'Delivery' ? '<td>'+(o.salesProcess==='Offline'?'Offline':'Online')+'</td>' : ''}</tr>`).join('')
   );
 });
 
@@ -3346,7 +3713,7 @@ function printExpenseVoucher(e){
       *{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       body{ font-family:'Hind Siliguri', Arial, sans-serif; color:#1A1F36; margin:0; padding:0; }
       .v{ border:2px solid #1A1F36; padding:0; }
-      .v-head{ padding:16px 20px 10px; text-align:center; border-bottom:1px solid #1A1F36; }
+      .v-head{ padding:10px 20px 8px; text-align:center; border-bottom:1px solid #1A1F36; }
       .v-head h2{ font-size:22px; }
       .v-sub{ font-size:11.5px; color:#4B5563; margin-top:2px; line-height:1.5; }
       .v-title{ background:#1A1F36; color:#fff; text-align:center; font-weight:700; letter-spacing:3px; font-size:15px; padding:8px 0; }
@@ -3905,11 +4272,18 @@ async function loadPurchases(){
   renderPurchaseList();
   renderDueViews();
 }
+function purQtyText(p){
+  const items = p.items || [];
+  const units = [...new Set(items.map(it=> it.unit || 'PCS'))];
+  const q = items.reduce((a,it)=> a + (Number(it.qty)||0), 0);
+  return fmtN(q) + (units.length === 1 && units[0] !== 'PCS' ? ' ' + esc(unitLabel(units[0])) : '');
+}
 function renderPurchaseList(){
   const wrap = document.getElementById('purListWrap');
   if (!PURCHASES.length){ wrap.innerHTML = '<div class="empty-state">এখনো কোনো Purchase নেই</div>'; return; }
-  wrap.innerHTML = `<table class="data-table"><thead><tr><th class="col-inv">Invoice</th><th>Date</th><th>Company</th><th>Payable</th><th>Paid</th><th>Due</th><th></th></tr></thead><tbody>` +
+  wrap.innerHTML = `<table class="data-table"><thead><tr><th class="col-inv">Invoice</th><th>Date</th><th>Company</th><th>Quantity</th><th>Payable</th><th>Paid</th><th>Due</th><th></th></tr></thead><tbody>` +
     PURCHASES.map(p=>`<tr><td class="col-inv">${esc(p.invoiceNo)}</td><td>${esc(p.date)}</td><td class="al-l">${esc(p.company)}</td>
+      <td>${purQtyText(p)}</td>
       <td>${fmtN(p.payable)}</td><td>${fmtN(p.paid)}</td><td>${fmtN(p.due)}</td>
       <td class="row-actions"><div class="act-wrap"><button type="button" data-inv="${esc(p.invoiceNo)}">🖨️ Print</button><button type="button" data-pedit="${esc(p.invoiceNo)}">Edit</button><button type="button" class="danger" data-pdel="${esc(p.invoiceNo)}">Delete</button></div></td></tr>`).join('') + `</tbody></table>`;
 }
@@ -3945,7 +4319,7 @@ function printPurchaseInvoice(p){
     <style>
       body{ font-family:'Hind Siliguri', Arial, sans-serif; padding:24px; color:#1A1F36; max-width:760px; margin:0 auto; }
       h2{ text-align:center; margin:0 0 2px; } .c{ text-align:center; font-size:12px; color:#6B7280; }
-      .ttl{ text-align:center; font-weight:bold; margin:14px 0; font-size:16px; border-top:1px solid #ccc; border-bottom:1px solid #ccc; padding:6px 0; }
+      .ttl{ text-align:center; font-weight:bold; margin:6px 0 8px; font-size:16px; border-top:1px solid #ccc; border-bottom:1px solid #ccc; padding:6px 0; }
       .meta{ display:flex; justify-content:space-between; gap:20px; font-size:13px; margin-bottom:12px; }
       table{ width:100%; border-collapse:collapse; font-size:13px; } th,td{ border:1px solid #ccc; padding:6px 8px; } th{ background:#EFEFEB; }
       .tot{ width:260px; margin:12px 0 0 auto; font-size:13px; } .tot div{ display:flex; justify-content:space-between; padding:3px 0; } .tot .b{ font-weight:bold; border-top:1px solid #999; }
@@ -4036,8 +4410,8 @@ function stockCurrent(){
   const det = (STOCK.details||[]).filter(d=>String(d.product).trim().toLowerCase() === key);
   return {
     title:'Stock — ' + (name || ''),
-    head:'<tr><th>#</th><th>Brand</th><th>Colour</th><th>Size</th><th>Purchased</th></tr>',
-    body:det.map((d,i)=>`<tr><td>${i+1}</td><td>${esc(d.brand)}</td><td>${esc(d.colour)}</td><td>${esc(d.size)}</td><td>${fmtN(d.purchased)}${d.unit && d.unit !== 'PCS' ? ' ' + esc(unitLabel(d.unit)) : ''}</td></tr>`).join(''),
+    head:'<tr><th>#</th><th>Product Name</th><th>Brand</th><th>Colour</th><th>Size</th><th>Purchased</th></tr>',
+    body:det.map((d,i)=>`<tr><td>${i+1}</td><td style="text-align:left;">${esc(d.product)}</td><td>${esc(d.brand)}</td><td>${esc(d.colour)}</td><td>${esc(d.size)}</td><td>${fmtN(d.purchased)}${d.unit && d.unit !== 'PCS' ? ' ' + esc(unitLabel(d.unit)) : ''}</td></tr>`).join(''),
     foot:'',
     stats: p ? `<div class="mini-stats">
       <div class="stat-card"><div class="label">Purchased</div><div class="value">${fmtN(p.purchased)}</div></div>
@@ -4236,7 +4610,7 @@ document.getElementById('wiSaveBtn').addEventListener('click', ()=>{
 });
 
 /* ===================== SETTINGS: SOCIAL ===================== */
-const SOCIAL_FIELDS = { facebook:'soFacebook', youtube:'soYoutube', instagram:'soInstagram', twitter:'soTwitter', whatsapp:'soWhatsapp' };
+const SOCIAL_FIELDS = { facebook:'soFacebook', youtube:'soYoutube', instagram:'soInstagram', twitter:'soTwitter', tiktok:'soTiktok', whatsapp:'soWhatsapp' };
 async function fillSocialForm(){
   const apply = ()=> Object.keys(SOCIAL_FIELDS).forEach(k=> document.getElementById(SOCIAL_FIELDS[k]).value = SOCIAL[k] || '');
   apply();
@@ -4438,6 +4812,12 @@ document.getElementById('langSwitch').addEventListener('click', e=>{
 
 /* ===================== REPORT / INVEST / CASH ===================== */
 Object.assign(I18N, {
+  'নিট লাভ':'Net Profit', 'নিট ক্ষতি (Loss)':'Net Loss (Loss)', 'নিট লাভ (Profit)':'Net Profit', 'মোট আয় (মুনাফা)':'Total Income (Profit)', 'পণ্য ক্রয়':'Product Purchase', 'পণ্য বিক্রয়':'Product Sales',
+  'ডেলিভারি চার্জ':'Delivery Charge', 'পণ্যের ক্রয় — বিক্রয় হিসাব':'Product Purchase — Sales', 'ডেলিভারি চার্জ হিসাব':'Delivery Charge Summary',
+  'ব্যয়: সকল খরচ':'Expense: All Costs', 'এই অর্ডারটি একদম মুছে ফেলবেন?':'Delete this order permanently?',
+  'বাতিল তালিকার সকল অর্ডার একসাথে মুছে ফেলবেন? এটি আর ফেরানো যাবে না।':'Delete ALL cancelled orders? This cannot be undone.',
+  'অর্ডার কনফার্ম হয়েছে → বুকিং':'Order confirmed → Booking', 'অর্ডার মুছে ফেলা হয়েছে':'Order deleted',
+  'বাতিল তালিকার সকল অর্ডার মুছে ফেলা হয়েছে':'All cancelled orders deleted', 'Social লিংক আপডেট হয়েছে':'Social links updated',
   'সঠিক পরিমাণ লিখুন':'Enter a valid quantity',
   'Color বাছুন':'Select Color', 'Size বাছুন':'Select Size',
   'প্রতিটি পণ্যের Color ও Size বাছুন':'Select Color and Size for every product',
@@ -4484,19 +4864,39 @@ function inRange(v, r){ const s = toYmd(v); return !!s && s >= r.from && s <= r.
 function sumBy(arr, f){ return arr.reduce((s,x)=> s + (Number(f(x))||0), 0); }
 function sortDateDesc(a){ return a.slice().sort((x,y)=> String(y.date).localeCompare(String(x.date))); }
 
+function addDaysYmd(ymd, n){ const [y,m,d] = ymd.split('-').map(Number); return ymdOf(new Date(y, m-1, d+n)); }
 function wirePeriod(prefix, onChange){
-  const st = { kind:'daily', date:todayStr() };
+  const st = { kind:'daily', date:todayStr(), to:addDaysYmd(todayStr(), 6) };
   const tabs = document.getElementById(prefix+'Tabs'), dateEl = document.getElementById(prefix+'Date');
-  dateEl.value = st.date;
+  const toEl = document.getElementById(prefix+'DateTo'), toField = document.getElementById(prefix+'ToField'), lbl = document.getElementById(prefix+'DateLabel');
+  dateEl.value = st.date; toEl.value = st.to;
   tabs.addEventListener('click', e=>{
     const b = e.target.closest('button[data-k]'); if (!b) return;
     tabs.querySelectorAll('button').forEach(x=> x.classList.toggle('active', x === b));
     st.kind = b.dataset.k;
     dateEl.parentElement.style.display = st.kind === 'total' ? 'none' : '';
+    const wk = st.kind === 'weekly';
+    toField.style.display = wk ? '' : 'none';
+    lbl.textContent = wk ? 'শুরুর তারিখ' : 'তারিখ বাছুন';
+    if (wk && st.to < st.date){ st.to = addDaysYmd(st.date, 6); toEl.value = st.to; }
     onChange();
   });
-  dateEl.addEventListener('change', ()=>{ st.date = dateEl.value || todayStr(); onChange(); });
+  dateEl.addEventListener('change', ()=>{
+    st.date = dateEl.value || todayStr();
+    if (st.kind === 'weekly' && st.to < st.date){ st.to = addDaysYmd(st.date, 6); toEl.value = st.to; }
+    onChange();
+  });
+  toEl.addEventListener('change', ()=>{
+    st.to = toEl.value || addDaysYmd(st.date, 6);
+    if (st.to < st.date){ st.date = st.to; dateEl.value = st.date; }
+    onChange();
+  });
   return st;
+}
+// সময়সীমা: সাপ্তাহিকে ইউজারের বাছাই করা শুরু-শেষ তারিখ, বাকিগুলো আগের নিয়মে
+function rangeOf(st){
+  if (st.kind === 'weekly') return { from:st.date, to:st.to, label:dmy(st.date)+' — '+dmy(st.to) };
+  return periodRange(st.kind, st.date);
 }
 
 function tblHtml(head, rows, foot){
@@ -4512,15 +4912,12 @@ function printReportDoc(title, periodLabel, bodyHtml){
     <style>
       body{ font-family:'Hind Siliguri', Arial, sans-serif; padding:20px; color:#1A1F36; }
       h2{ margin:4px 0 2px; text-align:center; }
-      .meta{ font-size:12px; color:#6B7280; margin-bottom:12px; text-align:center; }
+      .meta{ font-size:12px; color:#6B7280; margin:2px 0 8px; text-align:center; }
       .rpt-h{ margin:18px 0 6px; font-size:14px; }
       table{ width:100%; border-collapse:collapse; font-size:12px; }
       th, td{ border:1px solid #ddd; padding:6px 8px; text-align:left; }
       th{ background:#EFEFEB; text-align:center; }
       tfoot td{ font-weight:bold; background:#F5F5F0; }
-      .stat-grid, .mini-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:6px; }
-      .stat-card{ border:1px solid #ddd; border-radius:8px; padding:8px; text-align:center; }
-      .stat-card .label{ font-size:11px; color:#6B7280; } .stat-card .value{ font-weight:bold; font-size:14px; }
       .pl-result{ margin-top:10px; padding:10px; border:2px solid #1A1F36; border-radius:8px; text-align:center; font-weight:bold; font-size:15px; }
       .rpt-note{ font-size:11px; color:#6B7280; margin-top:6px; }
       .credit{ text-align:center; margin-top:18px; font-size:11px; color:#6B7280; border-top:1px dashed #ccc; padding-top:10px; }
@@ -4543,55 +4940,74 @@ async function loadReport(){
   body.innerHTML = '<div class="empty-state">লোড হচ্ছে…</div>';
   if (!API_URL){ body.innerHTML = '<div class="empty-state">Apps Script URL যুক্ত করা হলে এখানে রিপোর্ট দেখা যাবে।</div>'; return; }
   try{
-    const [o, e, i] = await Promise.all([ apiGet('action=orders'), apiGet('action=expenses'), apiGet('action=invests') ]);
-    RPT_DATA = { orders:o.orders||[], expenses:e.expenses||[], invests:i.invests||[] };
+    const [o, e, i, pu, inc, dep, stk] = await Promise.all([ apiGet('action=orders'), apiGet('action=expenses'), apiGet('action=invests'), apiGet('action=purchases'), apiGet('action=incomes'), apiGet('action=deposits'), apiGet('action=stock') ]);
+    RPT_DATA = { orders:o.orders||[], expenses:e.expenses||[], invests:i.invests||[], purchases:pu.purchases||[], incomes:inc.incomes||[], deposits:dep.deposits||[], stock:(stk.products||[]) };
     renderReport();
   }catch(err){ body.innerHTML = '<div class="empty-state">রিপোর্ট লোড করা যায়নি</div>'; }
 }
 
+function rtbl(head, rows, foot){
+  const body = rows.length ? rows.join('') : `<tr><td colspan="${head.length}" style="text-align:center;">কোনো তথ্য নেই</td></tr>`;
+  return `<table><thead><tr>${head.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${body}</tbody>${foot?`<tfoot>${foot}</tfoot>`:''}</table>`;
+}
 function renderReport(){
   const body = document.getElementById('rptBody');
   if (!RPT_DATA) return;
-  const r = periodRange(RPT.kind, RPT.date);
-  const invests  = sortDateDesc(RPT_DATA.invests.filter(x=> inRange(x.date, r)));
-  const orders   = RPT_DATA.orders.filter(o=> o.status !== 'Cancel' && inRange(o.timestamp, r));
-  const expenses = RPT_DATA.expenses.filter(x=> inRange(x.date || x.timestamp, r));
+  const r = rangeOf(RPT);
+  const orders    = RPT_DATA.orders.filter(o=> o.status === 'Delivery' && inRange(o.timestamp, r));
+  const expenses  = RPT_DATA.expenses.filter(x=> inRange(x.date || x.timestamp, r));
+  const purchases = RPT_DATA.purchases.filter(x=> inRange(x.date, r));
+  const incomes   = RPT_DATA.incomes.filter(x=> inRange(x.date, r));
+  const invests   = sortDateDesc(RPT_DATA.invests.filter(x=> inRange(x.date, r)));
+  const deposits  = sortDateDesc((RPT_DATA.deposits||[]).filter(x=> inRange(x.date, r)));
+  const costMap   = buildCostMap(RPT_DATA.purchases);
+  const acc = calcAccounts(orders, expenses, costMap, purchases, incomes);
+  const net = acc.net;
+  const row2 = (a,b)=> `<tr><td>${a}</td><td style="text-align:right;">${money(b)}</td></tr>`;
 
-  const secMap = {};
-  orders.forEach(o=>{
-    const k = (o.category || 'Others');
-    (secMap[k] = secMap[k] || { count:0, amount:0 });
-    secMap[k].count += 1; secMap[k].amount += Number(o.total)||0;
+  // খাত ভিত্তিক ব্যয়: পণ্য ক্রয় + খরচের ক্যাটাগরি
+  const expCat = {};
+  expenses.forEach(x=>{ const k = x.category || 'অন্যান্য'; expCat[k] = (expCat[k]||0) + (Number(x.amount)||0); });
+  const expRows = [ row2('পণ্য ক্রয়', acc.purchase) ].concat(Object.keys(expCat).sort().map(k=> row2('খরচ — ' + esc(k), expCat[k])));
+
+  // স্টক মূল্য (বর্তমান স্টক × গড় ক্রয় মূল্য)
+  let stockTotal = 0;
+  const stockRows = (RPT_DATA.stock||[]).filter(x=> Number(x.stock) > 0).map(x=>{
+    const uc = unitCost(costMap, x.product), val = uc * Number(x.stock);
+    stockTotal += val;
+    return `<tr><td>${esc(x.product)}</td><td style="text-align:center;">${fmtN(x.stock)}</td><td style="text-align:right;">${fmtN(uc)}</td><td style="text-align:right;">${fmtN(val)}</td></tr>`;
   });
-  const secRows = Object.keys(secMap).sort().map(k=> `<tr><td>${esc(k)}</td><td>${secMap[k].count}</td><td>${money(secMap[k].amount)}</td></tr>`);
-  const income  = sumBy(orders, o=>o.total);
-  const expense = sumBy(expenses, x=>x.amount);
-  const invTotal = sumBy(invests, x=>x.amount);
-  const net = Math.round((income - expense) * 100) / 100;
-  const plHtml = net > 0 ? `<div class="pl-result profit">Profit: ${money(net)}</div>`
-               : net < 0 ? `<div class="pl-result loss">Loss: ${money(Math.abs(net))}</div>`
-               :           `<div class="pl-result even">Profit / Loss: ${money(0)}</div>`;
+  stockTotal = Math.round(stockTotal * 100) / 100;
 
+  const invTotal = sumBy(invests, x=>x.amount), depTotal = sumBy(deposits, x=>x.amount);
   const html = `
-    <h3 class="rpt-h">Invest</h3>
-    ${tblHtml(['Date','Name','Mobile No','Address','Amount'],
-      invests.map(x=>`<tr><td>${dmy(x.date)}</td><td>${esc(x.name)}</td><td>${esc(x.mobile)}</td><td>${esc(x.address)}</td><td>${money(x.amount)}</td></tr>`),
-      `<tr><td colspan="4">সর্বমোট</td><td>${money(invTotal)}</td></tr>`)}
+    <h3 class="rpt-h">খাত ভিত্তিক আয়</h3>
+    ${rtbl(['খাত','টাকা'], [ row2('পণ্য বিক্রি (অনলাইন)', acc.online), row2('ডেলিভারি চার্জ', acc.delivery), row2('Sales in Shop', acc.shop), row2('Income', acc.manual) ],
+      `<tr><td>মোট আয়</td><td style="text-align:right;">${money(acc.income)}</td></tr>`)}
 
-    <h3 class="rpt-h">খাত ভিত্তিক Income</h3>
-    ${tblHtml(['খাত','অর্ডার সংখ্যা','আয়'], secRows, `<tr><td>সর্বমোট</td><td>${orders.length}</td><td>${money(income)}</td></tr>`)}
+    <h3 class="rpt-h">খাত ভিত্তিক ব্যয়</h3>
+    ${rtbl(['খাত','টাকা'], expRows, `<tr><td>মোট ব্যয়</td><td style="text-align:right;">${money(acc.expense)}</td></tr>`)}
 
-    <h3 class="rpt-h">Expenses</h3>
-    ${tblHtml(['Voucher No','তারিখ','ক্যাটাগরি','বিবরণ','পরিমাণ'],
-      expenses.map(x=>`<tr><td>${esc(x.voucherNo||'')}</td><td>${dmy(toYmd(x.date || x.timestamp))}</td><td>${esc(x.category)}</td><td>${esc(x.description)}</td><td>${money(x.amount)}</td></tr>`),
-      `<tr><td colspan="4">সর্বমোট</td><td>${money(expense)}</td></tr>`)}
+    <h3 class="rpt-h">মোট লাভ বা লস</h3>
+    ${rtbl(['বিষয়','টাকা'], [ row2('মোট আয়', acc.income), row2('মোট ব্যয়', acc.expense) ],
+      `<tr><td>${net < 0 ? 'নিট ক্ষতি (Loss)' : 'নিট লাভ (Profit)'}</td><td style="text-align:right;">${money(Math.abs(net))}</td></tr>`)}
 
-    <h3 class="rpt-h">Profit and Loss</h3>
-    ${tblHtml(['বিষয়','পরিমাণ'], [`<tr><td>মোট আয়</td><td>${money(income)}</td></tr>`, `<tr><td>মোট ব্যয়</td><td>${money(expense)}</td></tr>`])}
-    ${plHtml}`;
-  body.innerHTML = `<div class="rpt-period">${PERIOD_LABELS[RPT.kind]} রিপোর্ট — ${r.label}</div>` + html +
-    '<div class="rpt-note">আয় = বাতিল বাদে সব অর্ডারের মোট। Profit/Loss = আয় − ব্যয়। Invest মূলধন হিসেবে আলাদা দেখানো হয়েছে, Profit/Loss-এ ধরা হয়নি।</div>';
-  RPT._html = html; RPT._label = PERIOD_LABELS[RPT.kind] + ' — ' + r.label;
+    <h3 class="rpt-h">মোট ইনভেস্ট</h3>
+    ${rtbl(['তারিখ','নাম','টাকা'], invests.map(x=>`<tr><td>${dmy(x.date)}</td><td>${esc(x.name)}</td><td style="text-align:right;">${money(x.amount)}</td></tr>`),
+      `<tr><td colspan="2">মোট ইনভেস্ট</td><td style="text-align:right;">${money(invTotal)}</td></tr>`)}
+
+    <h3 class="rpt-h">মোট ক্যাশ (Deposit)</h3>
+    ${rtbl(['তারিখ','নাম','বিবরণ','টাকা'], deposits.map(x=>`<tr><td>${dmy(x.date)}</td><td>${esc(x.person)}</td><td>${esc(x.description)}</td><td style="text-align:right;">${money(x.amount)}</td></tr>`),
+      `<tr><td colspan="3">মোট ক্যাশ (Deposit)</td><td style="text-align:right;">${money(depTotal)}</td></tr>`)}
+
+    <h3 class="rpt-h">স্টক মূল্য</h3>
+    ${rtbl(['পণ্য','স্টক','গড় ক্রয় মূল্য','মূল্য'], stockRows,
+      `<tr><td colspan="3">মোট স্টক মূল্য</td><td style="text-align:right;">${money(stockTotal)}</td></tr>`)}`;
+
+  const label = PERIOD_LABELS[RPT.kind] + ' — ' + r.label;
+  const note = '';
+  body.innerHTML = `<div class="rpt-paper">${printBrand(44)}<div class="meta">Report — ${label}</div>${html}${note}</div>`;
+  RPT._html = html + note; RPT._label = label;
 }
 document.getElementById('rptRefreshBtn').addEventListener('click', loadReport);
 document.getElementById('rptPrintBtn').addEventListener('click', ()=>{
@@ -4749,7 +5165,7 @@ async function loadCashReport(){
   renderCashReport();
 }
 function renderCashReport(){
-  const r = periodRange(CRP.kind, CRP.date);
+  const r = rangeOf(CRP);
   const D = CASH.dep.list, W = CASH.wd.list;
   const opening = CRP.kind === 'total' ? 0 : sumBy(D.filter(x=> x.date < r.from), x=>x.amount) - sumBy(W.filter(x=> x.date < r.from), x=>x.amount);
   const dIn = sortDateDesc(D.filter(x=> inRange(x.date, r))), wIn = sortDateDesc(W.filter(x=> inRange(x.date, r)));
@@ -4780,6 +5196,7 @@ document.getElementById('crpPrintBtn').addEventListener('click', ()=>{
 
 /* ---------- হুক: মেনু/অ্যাকর্ডিয়ন খুললে ডেটা লোড ---------- */
 Object.assign(ACC_HOOKS, {
+  incomeform: ()=>{ if (!_incEditNo) resetIncForm(); loadIncomes(); },
   invest:     ()=> loadInvests(),
   deposit:    ()=>{ resetCashForm('dep'); showCashForm('dep',false); loadCash('dep'); },
   withdrawal: ()=>{ resetCashForm('wd');  showCashForm('wd',false);  loadCash('wd'); },
