@@ -811,7 +811,11 @@
             <button type="button" data-pane="cash" data-acc="cashreport">Cash Report</button>
           </div>
           <button data-pane="invest">Invest</button>
-          <button data-pane="report">Report</button>
+          <button type="button" class="has-sub" data-group="report" aria-expanded="false"><span>Report</span><span class="chev">▾</span></button>
+          <div class="sub-group" data-group="report">
+            <button type="button" data-pane="reportshort">Short Report</button>
+            <button type="button" data-pane="report">Details Report</button>
+          </div>
           <button type="button" class="has-sub" data-group="settings" aria-expanded="false"><span>Settings</span><span class="chev">▾</span></button>
           <div class="sub-group" data-group="settings">
             <button type="button" data-pane="aboutedit">About Us</button>
@@ -907,7 +911,7 @@
           </div>
           <div class="form-actions">
             <button class="btn btn-outline" id="expCancelBtn" type="button" style="display:none;">বাতিল</button>
-            <button class="btn btn-teal" id="expSaveBtn">সংরক্ষণ করুন</button>
+            <button class="btn btn-teal" id="expSaveBtn" type="button">সংরক্ষণ করুন</button>
           </div>
         </div>
           </div>
@@ -1250,6 +1254,26 @@
           </div>
         </div>
         <div id="rptBody"><div class="empty-state">লোড হচ্ছে…</div></div>
+      </div>
+
+      <!-- ---------- SHORT REPORT (শুধু মোট) ---------- -->
+      <div class="report-pane" id="pane-reportshort">
+        <div class="pill-tabs" id="rpsTabs">
+          <button type="button" class="active" data-k="daily">দৈনিক</button>
+          <button type="button" data-k="weekly">সাপ্তাহিক</button>
+          <button type="button" data-k="monthly">মাসিক</button>
+          <button type="button" data-k="yearly">বাৎসরিক</button>
+          <button type="button" data-k="total">সর্বমোট&#8203;</button>
+        </div>
+        <div class="period-bar">
+          <div class="field"><label id="rpsDateLabel">তারিখ বাছুন</label><input type="date" id="rpsDate"></div>
+          <div class="field" id="rpsToField" style="display:none;"><label>শেষ তারিখ</label><input type="date" id="rpsDateTo"></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" id="rpsRefreshBtn" type="button">রিফ্রেশ</button>
+            <button class="btn btn-outline btn-sm" id="rpsPrintBtn" type="button">🖨️ প্রিন্ট করুন</button>
+          </div>
+        </div>
+        <div id="rpsBody"><div class="empty-state">লোড হচ্ছে…</div></div>
       </div>
 
       <!-- ---------- INVEST ---------- -->
@@ -2047,7 +2071,7 @@ function showToast(msg){
 function money(n){ return Number(n||0).toLocaleString('en-BD') + ' টাকা'; }
 
 async function apiGet(params){
-  const res = await fetch(API_URL + '?' + params, { redirect:'follow' });
+  const res = await fetch(API_URL + '?' + params + '&_t=' + Date.now(), { redirect:'follow', cache:'no-store' });
   const text = await res.text();
   try{ return JSON.parse(text); }
   catch(e){ throw new Error('JSON parse failed: ' + text.slice(0,100)); }
@@ -2058,7 +2082,9 @@ async function apiPost(payload){
     headers:{ 'Content-Type':'text/plain;charset=utf-8' },
     body: JSON.stringify(payload)
   });
-  return res.json();
+  const text = await res.text();
+  try{ return JSON.parse(text); }
+  catch(e){ throw new Error('সার্ভার থেকে সঠিক উত্তর আসেনি — Apps Script নতুন করে Deploy করুন'); }
 }
 
 /* ---------- ন্যাভিগেশন ---------- */
@@ -3667,10 +3693,17 @@ document.getElementById('expSaveBtn').addEventListener('click', async ()=>{
   try{
     const res = await apiPost({ action: editing ? 'updateExpense' : 'addExpense', expense });
     if (res && res.error) throw new Error(res.error);
+    if (!editing && !(res && res.success)) throw new Error('সার্ভার সংরক্ষণ নিশ্চিত করেনি — Apps Script নতুন করে Deploy করুন');
     showToast(editing ? 'খরচ আপডেট হয়েছে' : 'খরচ যুক্ত করা হয়েছে');
     btn.disabled = false;
     resetExpForm();
+    // সাথে সাথে তালিকায় দেখানো, তারপর শীট থেকে রিফ্রেশ
+    if (!editing){
+      _currentExpenses.unshift({ expenseId:res.expenseId, timestamp:new Date().toISOString(), category:expense.category, description:expense.description, amount:expense.amount, voucherNo:res.voucherNo||'', date:expense.date });
+      renderExpenseTable();
+    }
     await loadExpenseReport();
+    if (!editing && res.expenseId && !_currentExpenses.some(x=> String(x.expenseId) === String(res.expenseId))) showToast('শীটে ডাটা পাওয়া যায়নি, রিফ্রেশ করে দেখুন');
   }catch(err){
     showToast(err.message || 'খরচ সংরক্ষণ করা যায়নি');
     btn.disabled = false; btn.textContent = editing ? 'আপডেট করুন' : 'সংরক্ষণ করুন';
@@ -5014,6 +5047,58 @@ document.getElementById('rptPrintBtn').addEventListener('click', ()=>{
   if (!RPT._html){ showToast('আগে রিপোর্ট লোড হতে দিন'); return; }
   printReportDoc('Report', RPT._label, RPT._html);
 });
+
+/* ---------- Short Report (শুধু মোট) ---------- */
+const RPS = wirePeriod('rps', ()=> renderShortReport());
+
+async function loadShortReport(){
+  const body = document.getElementById('rpsBody');
+  body.innerHTML = '<div class="empty-state">লোড হচ্ছে…</div>';
+  if (!API_URL){ body.innerHTML = '<div class="empty-state">Apps Script URL যুক্ত করা হলে এখানে রিপোর্ট দেখা যাবে।</div>'; return; }
+  try{
+    const [o, e, i, pu, inc, dep, stk] = await Promise.all([ apiGet('action=orders'), apiGet('action=expenses'), apiGet('action=invests'), apiGet('action=purchases'), apiGet('action=incomes'), apiGet('action=deposits'), apiGet('action=stock') ]);
+    RPT_DATA = { orders:o.orders||[], expenses:e.expenses||[], invests:i.invests||[], purchases:pu.purchases||[], incomes:inc.incomes||[], deposits:dep.deposits||[], stock:(stk.products||[]) };
+    renderShortReport();
+  }catch(err){ body.innerHTML = '<div class="empty-state">রিপোর্ট লোড করা যায়নি</div>'; }
+}
+function renderShortReport(){
+  const body = document.getElementById('rpsBody');
+  if (!RPT_DATA) return;
+  const r = rangeOf(RPS);
+  const orders    = RPT_DATA.orders.filter(o=> o.status === 'Delivery' && inRange(o.timestamp, r));
+  const expenses  = RPT_DATA.expenses.filter(x=> inRange(x.date || x.timestamp, r));
+  const purchases = RPT_DATA.purchases.filter(x=> inRange(x.date, r));
+  const incomes   = RPT_DATA.incomes.filter(x=> inRange(x.date, r));
+  const invests   = RPT_DATA.invests.filter(x=> inRange(x.date, r));
+  const deposits  = (RPT_DATA.deposits||[]).filter(x=> inRange(x.date, r));
+  const costMap   = buildCostMap(RPT_DATA.purchases);
+  const acc = calcAccounts(orders, expenses, costMap, purchases, incomes);
+  const net = acc.net;
+
+  let stockTotal = 0;
+  (RPT_DATA.stock||[]).filter(x=> Number(x.stock) > 0).forEach(x=>{ stockTotal += unitCost(costMap, x.product) * Number(x.stock); });
+  stockTotal = Math.round(stockTotal * 100) / 100;
+
+  const invTotal = sumBy(invests, x=>x.amount), depTotal = sumBy(deposits, x=>x.amount);
+  const row = (a,b)=> `<tr><td>${a}</td><td style="text-align:right;">${money(b)}</td></tr>`;
+  const html = rtbl(['বিষয়','টাকা'], [
+    row('মোট আয়', acc.income),
+    row('মোট ব্যয়', acc.expense),
+    row(net < 0 ? 'মোট লস (Loss)' : 'মোট লাভ (Profit)', Math.abs(net)),
+    row('মোট ইনভেস্ট', invTotal),
+    row('মোট ক্যাশ (জমা/Deposit)', depTotal),
+    row('মোট স্টক মূল্য', stockTotal)
+  ]);
+  const label = PERIOD_LABELS[RPS.kind] + ' — ' + r.label;
+  body.innerHTML = `<div class="rpt-paper">${printBrand(44)}<div class="meta">Short Report — ${label}</div>${html}</div>`;
+  RPS._html = html; RPS._label = label;
+}
+document.getElementById('rpsRefreshBtn').addEventListener('click', loadShortReport);
+document.getElementById('rpsPrintBtn').addEventListener('click', ()=>{
+  if (!RPS._html){ showToast('আগে রিপোর্ট লোড হতে দিন'); return; }
+  printReportDoc('Short Report', RPS._label, RPS._html);
+});
+document.querySelector('#reportSubnav button[data-pane="reportshort"]').addEventListener('click', loadShortReport);
 
 /* ---------- Invest ---------- */
 let INVESTS = [];

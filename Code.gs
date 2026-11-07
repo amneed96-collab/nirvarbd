@@ -42,7 +42,7 @@ function ensureSheet(name) {
   // শীট আছে — হেডার চেক করা
   var lastCol = sheet.getLastColumn();
   var existingHeaders = lastCol > 0
-    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h){ return String(h).trim().toLowerCase(); })
+    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h){ return String(h).trim().toLowerCase().replace(/\s+/g,''); })
     : [];
 
   if (existingHeaders.length === 0 || !existingHeaders[0]) {
@@ -55,7 +55,7 @@ function ensureSheet(name) {
 
   // Missing কলাম খুঁজে যুক্ত করা
   schema.forEach(function(col) {
-    var lc = col.toLowerCase();
+    var lc = col.toLowerCase().replace(/\s+/g,'');
     if (existingHeaders.indexOf(lc) === -1) {
       var newCol = sheet.getLastColumn() + 1;
       sheet.getRange(1, newCol).setValue(col);
@@ -133,6 +133,11 @@ function doPost(e) {
   var body;
   try { body = JSON.parse(e.postData.contents); }
   catch (err) { return jsonResponse({ error: 'Invalid JSON' }); }
+  try { return handlePost(body); }
+  catch (err) { return jsonResponse({ error: 'সার্ভার ত্রুটি: ' + (err && err.message ? err.message : err) }); }
+}
+
+function handlePost(body) {
   switch (body.action) {
     case 'order':             return jsonResponse(saveOrder(body.order));
     case 'updateOrderStatus': return jsonResponse(updateOrderStatus(body.orderId, body.status));
