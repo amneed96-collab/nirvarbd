@@ -227,10 +227,15 @@ function getProducts() {
   rowsToObjects(ensureSheet('Items').getDataRange().getValues()).forEach(function(it) {
     itemOpts[String(it.name || '').trim().toLowerCase()] = { colors: cleanList(it.colors), sizes: cleanList(it.sizes) };
   });
+  var stockMap = {};
+  try { getStock().products.forEach(function(sp){ stockMap[String(sp.product).trim().toLowerCase()] = sp.stock; }); } catch (e) {}
   var result = {
     products: rowsToObjects(rows).map(function(o){
       var opt = productOpts(o, itemOpts);
+      var sk = String(o.name || '').trim().toLowerCase();
       return {
+        // স্টক ট্র্যাক করা পণ্য (Purchase আছে) এর স্টক ০ বা কম হলে Stock Out
+        soldOut:  stockMap.hasOwnProperty(sk) && Number(stockMap[sk]) <= 0,
         id:       String(o.id),
         name:     o.name       || '',
         category: o.category   || 'Others',
@@ -369,12 +374,24 @@ function saveOrder(order) {
   var qty     = Number(order.quantity) || 0;
   qty = (uom === 'PCS') ? Math.round(qty) : r2(qty);
   if (!(qty > 0)) return { error: 'পরিমাণ/ওজন সঠিক নয়' };
+  if (!offline) {
+    var avail = null;
+    try { getStock().products.forEach(function(sp){ if (String(sp.product).trim().toLowerCase() === String(order.productName).trim().toLowerCase()) avail = Number(sp.stock); }); } catch (e) {}
+    if (avail !== null && avail <= 0) return { error: 'দুঃখিত, "' + order.productName + '" এর স্টক শেষ' };
+    if (avail !== null && qty > avail) return { error: 'দুঃখিত, "' + order.productName + '" এর স্টকে মাত্র ' + avail + ' আছে' };
+  }
   var unit    = Number(order.unitPrice)      || 0;
   var sub     = r2(unit * qty);
-  var area    = offline ? 'In Shop' : (order.deliveryArea || 'Inside Feni');
   // ডেলিভারি চার্জ সবসময় Settings শীট থেকে (ক্লায়েন্টের পাঠানো মান বিশ্বাস করা হয় না)
   var st      = getSettings();
-  var dc      = (area === 'Outside Feni') ? st.deliveryOutside : st.deliveryInside;
+  var area    = offline ? 'In Shop' : String(order.deliveryArea || st.deliveryAreas[0].name);
+  var dc      = 0;
+  if (!offline) {
+    var found = null;
+    st.deliveryAreas.forEach(function(a) { if (a.name === area) found = a; });
+    if (!found) return { error: 'ডেলিভারি এরিয়া সঠিক নয়, পেজ রিফ্রেশ করে আবার চেষ্টা করুন' };
+    dc = found.charge;
+  }
   if (offline) dc = 0;                     // শপ থেকে বিক্রিতে ডেলিভারি চার্জ নেই
   if (order.noDelivery === true) dc = 0;   // কার্টের একাধিক পণ্যে ডেলিভারি চার্জ একবারই
   var total   = sub + dc;
@@ -401,6 +418,7 @@ function saveOrder(order) {
     'salesprocess':   offline ? 'Offline' : 'Online'
   }, ['phone']);
 
+  clearProductsCache();
   return { success:true, orderId:orderId, timestamp:ts.toISOString(),
            subtotal:sub, deliveryArea:area, deliveryCharge:dc, total:total };
 }
@@ -416,6 +434,7 @@ function updateOrderStatus(orderId, status) {
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][idCol]) === String(orderId)) {
       sheet.getRange(i+1, stCol+1).setValue(status);
+      clearProductsCache();
       return { success:true };
     }
   }
@@ -432,7 +451,7 @@ function deleteOrder(orderId) {
     var rows  = sheet.getDataRange().getValues();
     var idC   = colIndex(sheet, 'orderId');
     for (var i = rows.length - 1; i >= 1; i--) {
-      if (String(rows[i][idC]) === String(orderId)) { sheet.deleteRow(i + 1); return { success: true }; }
+      if (String(rows[i][idC]) === String(orderId)) { sheet.deleteRow(i + 1); clearProductsCache(); return { success: true }; }
     }
     return { error: 'অর্ডার পাওয়া যায়নি' };
   } finally { lock.releaseLock(); }
@@ -451,6 +470,7 @@ function deleteCancelledOrders() {
     for (var i = rows.length - 1; i >= 1; i--) {
       if (String(rows[i][stC] || '').trim().toLowerCase() === 'cancel') { sheet.deleteRow(i + 1); n++; }
     }
+    clearProductsCache();
     return { success: true, deleted: n };
   } finally { lock.releaseLock(); }
 }
@@ -630,16 +650,37 @@ function getSettings() {
   var sheet = ensureSheet('Settings');
   var rows  = sheet.getDataRange().getValues();
   var out   = { deliveryInside: DEFAULT_SETTINGS.deliveryInside, deliveryOutside: DEFAULT_SETTINGS.deliveryOutside };
+  var areasRaw = null;
   for (var i = 1; i < rows.length; i++) {
     var k = String(rows[i][0]).trim();
     var v = rows[i][1];
-    if (NUM_SETTING_KEYS.indexOf(k) >= 0) {
+    if (k === 'deliveryAreas') {
+      try { var pa = JSON.parse(String(v)); if (Array.isArray(pa)) areasRaw = pa; } catch (e) {}
+    } else if (NUM_SETTING_KEYS.indexOf(k) >= 0) {
       if (v !== '' && !isNaN(Number(v))) out[k] = Number(v);
     } else if (TEXT_SETTING_KEYS.indexOf(k) >= 0) {
       out[k] = String(v === null || v === undefined ? '' : v);
     }
   }
+  var areas = cleanAreas(areasRaw);
+  if (!areas.length) areas = [ { name: 'Inside Feni', charge: out.deliveryInside }, { name: 'Outside Feni', charge: out.deliveryOutside } ];
+  out.deliveryAreas = areas;
   try { CacheService.getScriptCache().put(SETTINGS_CACHE_KEY, JSON.stringify(out), 300); } catch (e) {}
+  return out;
+}
+
+// ডেলিভারি এরিয়া তালিকা পরিষ্কার: নাম আবশ্যক, চার্জ ≥ ০, ডুপ্লিকেট নাম বাদ
+function cleanAreas(list) {
+  var seen = {}, out = [];
+  (list || []).forEach(function(a) {
+    var name = String((a && a.name) || '').trim().slice(0, 60);
+    var ch = Number(a && a.charge);
+    if (!name || isNaN(ch) || ch < 0) return;
+    var k = name.toLowerCase();
+    if (seen[k]) return;
+    seen[k] = true;
+    out.push({ name: name, charge: r2(ch) });
+  });
   return out;
 }
 
@@ -668,6 +709,11 @@ function saveSettings(s) {
     if (s[key] === undefined || s[key] === '' || isNaN(Number(s[key])) || Number(s[key]) < 0) return;
     put(key, Number(s[key]), false);
   });
+  if (Array.isArray(s.deliveryAreas)) {
+    var ar = cleanAreas(s.deliveryAreas);
+    if (!ar.length) return { error: 'কমপক্ষে একটি ডেলিভারি এরিয়া দিন' };
+    put('deliveryAreas', JSON.stringify(ar), true);
+  }
   TEXT_SETTING_KEYS.forEach(function(key) {
     if (s[key] === undefined || s[key] === null) return;
     put(key, String(s[key]).trim().slice(0, 500), true);
@@ -795,6 +841,7 @@ function savePurchase(p) {
       'authority': String(p.authority || '').trim(), 'buyer': String(p.buyer || '').trim(),
       'createdat': new Date()
     }, ['date', 'mobile']);
+    clearProductsCache();
   } finally { lock.releaseLock(); }
 
   return { success: true, purchase: {
@@ -852,6 +899,7 @@ function updatePurchase(invoiceNo, p) {
         if (k === 'date' || k === 'mobile') cell.setNumberFormat('@');
         cell.setValue(vals[k]);
       });
+      clearProductsCache();
       return { success: true, purchase: {
         invoiceNo: String(invoiceNo), date: date, company: company,
         mobile: vals.mobile, address: vals.address, items: items,
@@ -875,6 +923,7 @@ function deletePurchase(invoiceNo) {
     for (var i = 1; i < rows.length; i++) {
       if (String(rows[i][iC]) !== String(invoiceNo)) continue;
       sheet.deleteRow(i + 1);
+      clearProductsCache();
       var pSheet = ensureSheet('Payments');
       var pRows  = pSheet.getDataRange().getValues();
       var pC = colIndex(pSheet, 'invoiceNo');

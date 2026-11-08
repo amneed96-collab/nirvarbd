@@ -297,6 +297,13 @@
   .detail-gallery{ display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory; margin-bottom:14px; border-radius:10px; }
   .detail-gallery img{ flex:none; width:100%; max-height:300px; object-fit:contain; background:#F2F2EE; scroll-snap-align:center; border-radius:10px; }
   .detail-name{ font-size:1.15rem; font-weight:700; margin:6px 0 4px; word-break:break-word; }
+  .detail-opt{ margin:6px 0; font-size:0.9rem; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .detail-chip{ background:var(--chip); border-radius:999px; padding:3px 10px; font-size:0.82rem; font-weight:600; }
+  .stockout-tag{ background:#FDECEA; color:#C0392B; border-radius:6px; padding:3px 10px; font-weight:700; font-size:0.85rem; }
+  #detailBuyBtn:disabled{ background:#B8B8B0; cursor:not-allowed; }
+  .stockout-badge{ position:absolute; left:0; right:0; bottom:0; text-align:center; background:rgba(192,57,43,0.92); color:#fff; font-weight:700; font-size:0.78rem; padding:4px 0; z-index:2; }
+  .product-card.sold-out .product-thumb img{ filter:grayscale(1); opacity:0.55; }
+  .card-actions .cart-btn:disabled{ background:#EEE; color:#C0392B; border-color:#C0392B; cursor:not-allowed; }
   .detail-desc{ white-space:pre-wrap; word-break:break-word; color:var(--ink-soft); line-height:1.6; font-size:0.92rem; margin:10px 0 0; }
 
   /* ---------- skeleton loading ---------- */
@@ -415,6 +422,8 @@
   .modal-product-thumb{ width:56px; height:56px; border-radius:8px; background:var(--chip); flex:none; overflow:hidden; }
   .modal-product-thumb img{ width:100%; height:100%; object-fit:cover; }
   .modal-product-name{ font-weight:700; font-size:0.98rem; }
+  .modal-product-desc{ font-size:0.8rem; color:var(--ink-soft); margin:2px 0 4px; white-space:pre-line; max-height:6em; overflow:auto; }
+  #homeProductGrid .product-card{ cursor:pointer; }
   .modal-product-price{ font-family:var(--font-mono); color:var(--primary); font-weight:700; font-size:0.92rem; }
 
   .qty-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
@@ -596,6 +605,7 @@
   .card-actions button{ flex:1; min-width:0; white-space:nowrap; font-size:0.7rem; font-weight:700; padding:7px 4px; border-radius:6px; cursor:pointer; }
   .card-actions .cart-btn{ background:var(--white); color:var(--orange); border:1.5px solid var(--orange); }
   .card-actions .cart-btn:hover{ background:#FFF1E8; }
+  .card-actions .cart-btn{ width:100%; }
   .card-actions .buy-btn{ padding:7px 4px; border:1.5px solid var(--orange); }
 
   /* কার্ট */
@@ -708,7 +718,7 @@
     <div class="hero-slides" id="heroSlides">
       <div class="hero-slide active" data-first="1">
         <h1><span class="site-name-text" data-notr>ProyojonBD</span> — আপনার দৈনন্দিন প্রয়োজন, এক ক্লিকে</h1>
-        <p>পছন্দের পণ্য বেছে নিন, Buy Now চাপুন, ক্যাশ অন ডেলিভারিতে অর্ডার করুন</p>
+        <p>পছন্দের পণ্যে ক্লিক করুন, তথ্য দিয়ে ক্যাশ অন ডেলিভারিতে অর্ডার করুন</p>
       </div>
     </div>
     <div class="hero-dots" id="heroDots"></div>
@@ -881,6 +891,11 @@
           <button data-status="Cancel">বাতিল</button>
         </div>
         <div class="table-toolbar">
+          <span id="ordersMonthBox" style="display:none;align-items:center;gap:6px;">
+            <label for="ordersMonth" style="font-size:0.82rem;font-weight:700;">মাস:</label>
+            <input type="month" id="ordersMonth" style="padding:5px 8px;border:1px solid var(--hairline);border-radius:8px;">
+            <button class="btn btn-outline btn-sm" id="ordersMonthAllBtn" type="button">সব মাস</button>
+          </span>
           <button class="btn btn-outline btn-sm" id="ordersRefreshBtn">রিফ্রেশ</button>
           <button class="btn btn-outline btn-sm" id="ordersPrintBtn">🖨️ প্রিন্ট করুন</button>
           <button class="btn btn-sm" id="ordersDeleteAllBtn" style="display:none;background:var(--danger);color:#fff;">🗑️ সকল ডিলেট</button>
@@ -1223,10 +1238,8 @@
           <div class="acc-body">
         <div class="form-card">
           <p style="font-size:0.85rem;color:var(--ink-soft);margin-top:0;">এখানে পরিবর্তন করলে সাথে সাথে ওয়েবসাইটের অর্ডার ফর্মে নতুন চার্জ কার্যকর হবে। কোডে কিছু বদলাতে হবে না।</p>
-          <div class="form-grid">
-            <div class="field"><label>ফেনীর ভেতরে (টাকা)</label><input type="number" id="dcInside" min="0"></div>
-            <div class="field"><label>ফেনীর বাইরে (টাকা)</label><input type="number" id="dcOutside" min="0"></div>
-          </div>
+          <div id="dcRows"></div>
+          <button type="button" class="btn btn-outline btn-sm" id="dcAddRowBtn" style="margin-bottom:12px;">+ নতুন এরিয়া যুক্ত করুন</button>
           <div class="form-actions">
             <button class="btn btn-teal" id="dcSaveBtn">সংরক্ষণ করুন</button>
           </div>
@@ -1451,16 +1464,7 @@
 
     <div class="field" id="areaField">
       <label>ডেলিভারি এলাকা</label>
-      <div class="area-options">
-        <label class="area-option">
-          <input type="radio" name="deliveryArea" value="Inside Feni" checked>
-          <span id="areaLabelInside">ফেনীর ভেতরে</span>
-        </label>
-        <label class="area-option">
-          <input type="radio" name="deliveryArea" value="Outside Feni">
-          <span id="areaLabelOutside">ফেনীর বাইরে</span>
-        </label>
-      </div>
+      <div class="area-options" id="areaOptions"></div>
     </div>
 
     <div class="field" id="nameField">
@@ -1542,10 +1546,7 @@
     <div class="cart-form" id="cartForm">
       <div class="field">
         <label>ডেলিভারি এলাকা</label>
-        <div class="area-options">
-          <label class="area-option"><input type="radio" name="cartArea" value="Inside Feni" checked><span id="cartAreaInside">ফেনীর ভেতরে</span></label>
-          <label class="area-option"><input type="radio" name="cartArea" value="Outside Feni"><span id="cartAreaOutside">ফেনীর বাইরে</span></label>
-        </div>
+        <div class="area-options" id="cartAreaOptions"></div>
       </div>
       <div class="field" id="cartNameField"><label for="cartName">আপনার নাম</label><input type="text" id="cartName" placeholder="যেমন: রহিম উদ্দিন"><div class="field-error">নাম লিখুন</div></div>
       <div class="field" id="cartPhoneField"><label for="cartPhone">মোবাইল নম্বর</label><input type="tel" id="cartPhone" placeholder="01XXXXXXXXX"><div class="field-error">সঠিক মোবাইল নম্বর দিন</div></div>
@@ -1599,6 +1600,27 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzhR_FwZNlFls6uB0a5FsnVt3yW5_Wt0Q2T8zzkPCLqjBWB0Y4K7QVAjcTYaX8DWvGO/exec"; // আপনার Apps Script Web App URL এখানে বসান
 // ডেলিভারি চার্জ এখন Report → "ডেলিভারি চার্জ" থেকে বদলানো যায়। নিচের মান শুধু ডিফল্ট (শীট থেকে লোড না হওয়া পর্যন্ত)।
 const DELIVERY_CHARGES = { "Inside Feni": 60, "Outside Feni": 150 };
+let DELIVERY_AREAS = [ { name:"Inside Feni", charge:60 }, { name:"Outside Feni", charge:150 } ];
+function areaLabel(n){ return n === 'Inside Feni' ? 'ফেনীর ভেতরে' : n === 'Outside Feni' ? 'ফেনীর বাইরে' : String(n || ''); }
+function setDeliveryAreas(list){
+  DELIVERY_AREAS = list;
+  Object.keys(DELIVERY_CHARGES).forEach(k=> delete DELIVERY_CHARGES[k]);
+  list.forEach(a=>{ DELIVERY_CHARGES[a.name] = Number(a.charge) || 0; });
+}
+function areaChargeOf(n){ return Number(DELIVERY_CHARGES[n]) || 0; }
+function firstAreaName(){ return DELIVERY_AREAS.length ? DELIVERY_AREAS[0].name : ''; }
+function areaOptionsHtml(radioName, selected){
+  return DELIVERY_AREAS.map((a,i)=>{
+    const on = selected && DELIVERY_CHARGES.hasOwnProperty(selected) ? a.name === selected : i === 0;
+    return `<label class="area-option"><input type="radio" name="${radioName}" value="${esc(a.name)}"${on ? ' checked' : ''}><span>${esc(areaLabel(a.name))} — ${a.charge} টাকা</span></label>`;
+  }).join('');
+}
+function renderAreaOptions(){
+  const pick = n=>{ const c = document.querySelector('input[name="' + n + '"]:checked'); return c ? c.value : ''; };
+  const a = document.getElementById('areaOptions'), c = document.getElementById('cartAreaOptions');
+  if (a) a.innerHTML = areaOptionsHtml('deliveryArea', pick('deliveryArea'));
+  if (c) c.innerHTML = areaOptionsHtml('cartArea', pick('cartArea'));
+}
 const PRODUCTS_CACHE_KEY = 'proyojonbd_products_cache_v2';
 const SETTINGS_CACHE_KEY = 'proyojonbd_settings_cache_v1';
 
@@ -1627,7 +1649,7 @@ const I18N = {
   // হোম
   '— আপনার দৈনন্দিন প্রয়োজন, এক ক্লিকে': '— Your daily needs, one click away',
   'আপনার দৈনন্দিন প্রয়োজন, এক ক্লিকে': 'Your daily needs, one click away',
-  'পছন্দের পণ্য বেছে নিন, Buy Now চাপুন, ক্যাশ অন ডেলিভারিতে অর্ডার করুন': 'Pick your favourite products, press Buy Now, and order with Cash on Delivery',
+  'পছন্দের পণ্যে ক্লিক করুন, তথ্য দিয়ে ক্যাশ অন ডেলিভারিতে অর্ডার করুন': 'Pick your favourite products, press Buy Now, and order with Cash on Delivery',
   'সব ক্যাটাগরি': 'All categories',
   'পছন্দের পণ্য পেতে ক্যাটাগরি সিলেক্ট করুন': 'Select a category to find your products',
   'আরো': 'See more',
@@ -2017,12 +2039,15 @@ function applySocialLinks(){
 /* ---------- ডেলিভারি চার্জ ---------- */
 function applyDeliverySettings(s){
   if (!s) return;
-  if (s.deliveryInside  !== undefined && !isNaN(Number(s.deliveryInside)))  DELIVERY_CHARGES["Inside Feni"]  = Number(s.deliveryInside);
-  if (s.deliveryOutside !== undefined && !isNaN(Number(s.deliveryOutside))) DELIVERY_CHARGES["Outside Feni"] = Number(s.deliveryOutside);
-  const a = document.getElementById('areaLabelInside');
-  const b = document.getElementById('areaLabelOutside');
-  if (a) a.textContent = 'ফেনীর ভেতরে — ' + DELIVERY_CHARGES["Inside Feni"] + ' টাকা';
-  if (b) b.textContent = 'ফেনীর বাইরে — ' + DELIVERY_CHARGES["Outside Feni"] + ' টাকা';
+  if (Array.isArray(s.deliveryAreas) && s.deliveryAreas.length){
+    setDeliveryAreas(s.deliveryAreas.map(a=> ({ name:String(a.name), charge:Number(a.charge) || 0 })));
+  } else if (s.deliveryInside !== undefined || s.deliveryOutside !== undefined){
+    const ins = !isNaN(Number(s.deliveryInside)) ? Number(s.deliveryInside) : areaChargeOf('Inside Feni');
+    const out = !isNaN(Number(s.deliveryOutside)) ? Number(s.deliveryOutside) : areaChargeOf('Outside Feni');
+    setDeliveryAreas([ { name:'Inside Feni', charge:ins }, { name:'Outside Feni', charge:out } ]);
+  }
+  renderAreaOptions();
+  if (typeof renderCart === 'function' && document.getElementById('cartScrim').classList.contains('open')) updateCartTotals();
   if (typeof currentProduct !== 'undefined' && currentProduct && document.getElementById('buyModalScrim').classList.contains('open')) updateModalTotal();
 }
 
@@ -2362,18 +2387,15 @@ function productCardHTML(p){
     </div>`;
 
   return `
-    <div class="product-card" data-pid="${esc(p.id)}">
-      <div class="product-thumb">${thumbHtml}</div>
+    <div class="product-card${p.soldOut ? ' sold-out' : ''}" data-pid="${esc(p.id)}">
+      <div class="product-thumb">${thumbHtml}${p.soldOut ? '<span class="stockout-badge">Stock Out</span>' : ''}</div>
       <div class="product-body">
-        <div class="cat-row">${p.category ? `<span class="product-cat-tag">${esc(p.category)}</span>` : ''}</div>
         <div class="product-name" title="${esc(p.name)}">${esc(p.name)}</div>
-        ${descHtml}
         <div class="product-footer">
           ${priceHtml}
         </div>
         <div class="card-actions">
-          <button class="cart-btn" type="button" data-id="${esc(p.id)}">Add to Cart</button>
-          <button class="buy-btn" type="button" data-id="${esc(p.id)}" data-price="${finalPrice}">Buy Now</button>
+          ${p.soldOut ? `<button class="cart-btn" type="button" disabled>Stock Out</button>` : `<button class="cart-btn" type="button" data-id="${esc(p.id)}">Add to Cart</button>`}
         </div>
       </div>
     </div>`;
@@ -2415,8 +2437,12 @@ function renderProducts(){
   grid.innerHTML = html || `<div class="empty-state" style="grid-column:1/-1">কোনো পণ্য পাওয়া যায়নি</div>`;
   // orderProductGrid removed — Home only
 
-  document.querySelectorAll('.buy-btn').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{ e.stopPropagation(); openBuyModal(btn.dataset.id, Number(btn.dataset.price)); });
+  // কার্ডে ক্লিক করলে অর্ডার ফরম খুলবে (Add to Cart বাটন বাদে)
+  document.querySelectorAll('#homeProductGrid .product-card').forEach(card=>{
+    card.addEventListener('click', e=>{
+      if (e.target.closest('button')) return;
+      openProductDetail(card.dataset.pid);
+    });
   });
   document.querySelectorAll('.see-more-btn').forEach(btn=>{
     btn.addEventListener('click', e=>{ e.stopPropagation(); openProductDetail(btn.dataset.id); });
@@ -2448,10 +2474,15 @@ function openProductDetail(id){
   const hasDisc = fp < Number(p.price);
   document.getElementById('detailBody').innerHTML = `
     ${imgs.length ? `<div class="detail-gallery">${imgs.map(u=>`<img src="${esc(u)}" alt="${esc(p.name)}">`).join('')}</div>` : ''}
-    ${p.category ? `<span class="product-cat-tag">${esc(p.category)}</span>` : ''}
     <div class="detail-name">${esc(p.name)}</div>
     <div class="modal-product-price">${hasDisc ? `<span style="text-decoration:line-through;color:var(--ink-soft);font-weight:400;margin-right:6px;">${money(p.price)}</span>` : ''}${money(fp)}${unitSuffix(p)}</div>
-    <p class="detail-desc">${esc(p.desc || '')}</p>`;
+    ${(!isMeasure(p) && listOf(p.colors).length) ? `<div class="detail-opt"><b>Color:</b> ${listOf(p.colors).map(c=>`<span class="detail-chip">${esc(c)}</span>`).join('')}</div>` : ''}
+    ${(!isMeasure(p) && listOf(p.sizes).length) ? `<div class="detail-opt"><b>Size:</b> ${listOf(p.sizes).map(c=>`<span class="detail-chip">${esc(c)}</span>`).join('')}</div>` : ''}
+    ${p.soldOut ? `<div class="detail-opt"><span class="stockout-tag">Stock Out</span></div>` : ''}
+    ${String(p.desc || '').trim() ? `<p class="detail-desc">${esc(p.desc)}</p>` : ''}`;
+  const dBuy = document.getElementById('detailBuyBtn');
+  dBuy.disabled = !!p.soldOut;
+  dBuy.textContent = p.soldOut ? 'Stock Out' : 'Buy Now';
   document.getElementById('detailScrim').classList.add('open');
 }
 function closeProductDetail(){ document.getElementById('detailScrim').classList.remove('open'); }
@@ -2620,6 +2651,7 @@ function applyShopModeUI(){
   document.querySelector('label[for="custPhone"]').textContent = shopMode ? 'মোবাইল নম্বর (ঐচ্ছিক)' : 'মোবাইল নম্বর';
 }
 function openBuyModal(id, finalPrice, shop){
+  { const sp = PRODUCTS.find(p=>String(p.id)===String(id)); if (!shop && sp && sp.soldOut){ showToast('এই পণ্যের স্টক শেষ'); return; } }
   shopMode = !!shop;
   applyShopModeUI();
   currentProduct = PRODUCTS.find(p=>String(p.id)===String(id));
@@ -2631,7 +2663,8 @@ function openBuyModal(id, finalPrice, shop){
   document.getElementById('kgBlock').style.display  = kg ? '' : 'none';
   setupMeasureInput(mu);
   fillOrderOptions(currentProduct);
-  document.querySelector('input[name="deliveryArea"][value="Inside Feni"]').checked = true;
+  renderAreaOptions();
+  { const f = document.querySelector('input[name="deliveryArea"]'); if (f) f.checked = true; }
 
   // image ফিল্ডে কমা দিয়ে একাধিক URL থাকে — প্রথমটি ব্যবহার করা হচ্ছে
   const firstImg = currentProduct.image ? currentProduct.image.split(',').map(u=>u.trim()).filter(Boolean)[0] : '';
@@ -2650,13 +2683,13 @@ function openBuyModal(id, finalPrice, shop){
 
 function getSelectedDeliveryArea(){
   const checked = document.querySelector('input[name="deliveryArea"]:checked');
-  return checked ? checked.value : 'Inside Feni';
+  return checked ? checked.value : firstAreaName();
 }
 
 function updateModalTotal(){
   if (!isMeasure(currentProduct)) document.getElementById('qtyValue').textContent = currentQty;
   const subtotal = Math.round(currentProduct._finalPrice * currentQty * 100) / 100;
-  const deliveryCharge = shopMode ? 0 : DELIVERY_CHARGES[getSelectedDeliveryArea()];
+  const deliveryCharge = shopMode ? 0 : areaChargeOf(getSelectedDeliveryArea());
   document.getElementById('modalSubtotal').textContent = money(subtotal);
   document.getElementById('modalDelivery').textContent = money(deliveryCharge);
   document.getElementById('modalTotal').textContent = money(subtotal + deliveryCharge);
@@ -2667,9 +2700,7 @@ document.getElementById('shopPrice').addEventListener('input', ()=>{
   currentProduct._finalPrice = Math.max(0, Number(document.getElementById('shopPrice').value) || 0);
   updateModalTotal();
 });
-document.querySelectorAll('input[name="deliveryArea"]').forEach(radio=>{
-  radio.addEventListener('change', updateModalTotal);
-});
+document.getElementById('areaOptions').addEventListener('change', updateModalTotal);
 
 document.getElementById('qtyIncBtn').addEventListener('click', ()=>{ currentQty++; updateModalTotal(); });
 document.getElementById('qtyDecBtn').addEventListener('click', ()=>{ if (currentQty>1){ currentQty--; updateModalTotal(); } });
@@ -2731,7 +2762,7 @@ document.getElementById('confirmBuyBtn').addEventListener('click', async ()=>{
   }
   const subtotal = Math.round(currentProduct._finalPrice * currentQty * 100) / 100;
   const deliveryArea = shopMode ? 'In Shop' : getSelectedDeliveryArea();
-  const deliveryCharge = shopMode ? 0 : DELIVERY_CHARGES[deliveryArea];
+  const deliveryCharge = shopMode ? 0 : areaChargeOf(deliveryArea);
   const total = subtotal + deliveryCharge;
 
   const order = {
@@ -3454,10 +3485,23 @@ document.querySelectorAll('#orderStatusTabs button').forEach(tab=>{
     document.querySelectorAll('#orderStatusTabs button').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
     currentReportStatus = tab.dataset.status;
+    const mb = document.getElementById('ordersMonthBox');
+    mb.style.display = (currentReportStatus === 'Delivery' || currentReportStatus === 'Cancel') ? 'inline-flex' : 'none';
     loadOrdersReport();
   });
 });
 document.getElementById('ordersRefreshBtn').addEventListener('click', loadOrdersReport);
+// মাস ভিত্তিক ফিল্টার (ডেলিভারি সম্পন্ন ও বাতিল)
+function ordersMonthSel(){
+  if (currentReportStatus !== 'Delivery' && currentReportStatus !== 'Cancel') return '';
+  return document.getElementById('ordersMonth').value || '';
+}
+function ordersView(){
+  const m = ordersMonthSel();
+  return m ? _currentOrdersList.filter(o=> String(toYmd(o.timestamp) || '').slice(0,7) === m) : _currentOrdersList;
+}
+document.getElementById('ordersMonth').addEventListener('change', renderOrdersTable);
+document.getElementById('ordersMonthAllBtn').addEventListener('click', ()=>{ document.getElementById('ordersMonth').value = ''; renderOrdersTable(); });
 document.getElementById('ordersDeleteAllBtn').addEventListener('click', async ()=>{
   if (!_currentOrdersList.length) return;
   if (!ask('বাতিল তালিকার সকল অর্ডার একসাথে মুছে ফেলবেন? এটি আর ফেরানো যাবে না।')) return;
@@ -3486,7 +3530,7 @@ async function loadOrdersReport(){
   }
 }
 
-function areaText(o){ return o.deliveryArea==='In Shop' ? 'শপ' : (o.deliveryArea==='Outside Feni'?'ফেনীর বাইরে':'ফেনীর ভেতরে'); }
+function areaText(o){ return o.deliveryArea==='In Shop' ? 'শপ' : (areaLabel(o.deliveryArea) || 'ফেনীর ভেতরে'); }
 function statusPillClass(status){
   const s = (status||'').toLowerCase();
   if (s==='delivery') return 'delivery';
@@ -3497,14 +3541,15 @@ function statusPillClass(status){
 function renderOrdersTable(){
   const wrap = document.getElementById('ordersTableWrap');
   document.getElementById('ordersDeleteAllBtn').style.display = (currentReportStatus === 'Cancel' && _currentOrdersList.length) ? '' : 'none';
-  if (!_currentOrdersList.length){ wrap.innerHTML = `<div class="empty-state">এই স্ট্যাটাসে কোনো অর্ডার নেই</div>`; return; }
+  const view = ordersView();
+  if (!view.length){ wrap.innerHTML = `<div class="empty-state">${ordersMonthSel() ? 'এই মাসে কোনো অর্ডার নেই' : 'এই স্ট্যাটাসে কোনো অর্ডার নেই'}</div>`; return; }
   const isNew = currentReportStatus === 'New';
 
   wrap.innerHTML = `
     <table class="data-table">
       <thead><tr><th>অর্ডার আইডি</th><th>তারিখ</th><th>কাস্টমার</th><th>মোবাইল</th><th>পণ্য</th><th>পরিমাণ</th><th>এলাকা</th><th>ঠিকানা</th><th>সাবটোটাল</th><th>ডেলিভারি</th><th>মোট</th>${currentReportStatus === 'Delivery' ? '<th>Sales Process</th>' : ''}${isNew ? '<th>অ্যাকশন</th>' : '<th>স্ট্যাটাস</th>'}${currentReportStatus === 'Delivery' ? '<th>Invoice</th>' : ''}${currentReportStatus === 'Cancel' ? '<th>অ্যাকশন</th>' : ''}</tr></thead>
       <tbody>
-        ${_currentOrdersList.map(o=>`
+        ${view.map(o=>`
           <tr>
             <td>${o.orderId||''}</td>
             <td>${o.timestamp ? new Date(o.timestamp).toLocaleDateString(dateLocale()) : ''}</td>
@@ -3628,7 +3673,7 @@ function printThermalInvoice(o, opt2){
     <div class="r"><span>${esc(qtyTxt)} × ${fmtN(o.unitPrice)}</span><span>${fmtN(o.subtotal)}</span></div>
     <hr>
     <div class="r"><span>Subtotal</span><span>${fmtN(o.subtotal)}</span></div>
-    ${offl ? '' : `<div class="r"><span>Delivery (${o.deliveryArea === 'Outside Feni' ? 'Outside Feni' : 'Inside Feni'})</span><span>${fmtN(o.deliveryCharge)}</span></div>`}
+    ${offl ? '' : `<div class="r"><span>Delivery (${esc(o.deliveryArea || 'Inside Feni')})</span><span>${fmtN(o.deliveryCharge)}</span></div>`}
     <hr>
     <div class="r t"><span>Total</span><span>${fmtN(o.total)} Tk</span></div>
     <hr>
@@ -3643,9 +3688,16 @@ function printThermalInvoice(o, opt2){
 }
 
 document.getElementById('ordersPrintBtn').addEventListener('click', ()=>{
-  printTableWindow('অর্ডার রিপোর্ট — ' + currentReportStatus,
+  const view = ordersView(), mSel = ordersMonthSel();
+  if (!view.length){ showToast('প্রিন্ট করার মতো অর্ডার নেই'); return; }
+  const stLabel = currentReportStatus === 'Delivery' ? 'ডেলিভারি সম্পন্ন' : currentReportStatus === 'Cancel' ? 'বাতিল' : currentReportStatus;
+  const mLabel = mSel ? ' — ' + new Date(Number(mSel.slice(0,4)), Number(mSel.slice(5,7)) - 1, 1).toLocaleDateString('bn-BD', { month:'long', year:'numeric' }) : '';
+  const grand = view.reduce((a,o)=> a + (Number(o.total) || 0), 0);
+  const cols = 10 + (currentReportStatus === 'Delivery' ? 1 : 0);
+  printTableWindow('অর্ডার রিপোর্ট — ' + stLabel + mLabel,
     '<tr><th>অর্ডার আইডি</th><th>তারিখ</th><th>কাস্টমার</th><th>মোবাইল</th><th>পণ্য</th><th>পরিমাণ</th><th>ডেলিভারি এলাকা</th><th>ঠিকানা</th><th>মোট</th><th>স্ট্যাটাস</th>' + (currentReportStatus === 'Delivery' ? '<th>Sales Process</th>' : '') + '</tr>',
-    _currentOrdersList.map(o=>`<tr><td>${o.orderId||''}</td><td>${o.timestamp?new Date(o.timestamp).toLocaleDateString(dateLocale()):''}</td><td>${o.customerName||''}</td><td>${o.phone||''}</td><td>${o.productName||''}</td><td>${orderQtyText(o)}</td><td>${areaText(o)}</td><td>${o.address||''}</td><td>${o.total||0} টাকা</td><td>${o.status==='New'?'নতুন':o.status==='Pending'?'বুকিং':(o.status||'')}</td>${currentReportStatus === 'Delivery' ? '<td>'+(o.salesProcess==='Offline'?'Offline':'Online')+'</td>' : ''}</tr>`).join('')
+    view.map(o=>`<tr><td>${o.orderId||''}</td><td>${o.timestamp?new Date(o.timestamp).toLocaleDateString(dateLocale()):''}</td><td>${o.customerName||''}</td><td>${o.phone||''}</td><td>${o.productName||''}</td><td>${orderQtyText(o)}</td><td>${areaText(o)}</td><td>${o.address||''}</td><td>${o.total||0} টাকা</td><td>${o.status==='New'?'নতুন':o.status==='Pending'?'বুকিং':(o.status||'')}</td>${currentReportStatus === 'Delivery' ? '<td>'+(o.salesProcess==='Offline'?'Offline':'Online')+'</td>' : ''}</tr>`).join(''),
+    `<tr><td colspan="8">সর্বমোট (${view.length}টি অর্ডার)</td><td>${grand} টাকা</td><td colspan="${cols - 9}"></td></tr>`
   );
 });
 
@@ -4013,21 +4065,46 @@ document.addEventListener('click', e=>{
 });
 
 /* ===================== DELIVERY CHARGE SETTINGS (Report) ===================== */
-async function loadDeliveryPane(){
-  document.getElementById('dcInside').value  = DELIVERY_CHARGES["Inside Feni"];
-  document.getElementById('dcOutside').value = DELIVERY_CHARGES["Outside Feni"];
-  await loadDeliverySettings();
-  document.getElementById('dcInside').value  = DELIVERY_CHARGES["Inside Feni"];
-  document.getElementById('dcOutside').value = DELIVERY_CHARGES["Outside Feni"];
+function dcRowHtml(name, charge, orig){
+  return `<div class="dc-row" data-orig="${esc(orig || '')}" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">
+    <div class="field" style="flex:2;margin:0;"><label>এরিয়ার নাম</label><input type="text" class="dc-name" value="${esc(name)}" placeholder="যেমন: ঢাকা"></div>
+    <div class="field" style="flex:1;margin:0;"><label>চার্জ (টাকা)</label><input type="number" class="dc-charge" min="0" value="${esc(charge)}"></div>
+    <button type="button" class="btn btn-outline btn-sm dc-del">মুছুন</button>
+  </div>`;
 }
+function renderDcRows(){
+  document.getElementById('dcRows').innerHTML = DELIVERY_AREAS.map(a=> dcRowHtml(areaLabel(a.name), a.charge, a.name)).join('');
+}
+async function loadDeliveryPane(){
+  renderDcRows();
+  await loadDeliverySettings();
+  renderDcRows();
+}
+document.getElementById('dcAddRowBtn').addEventListener('click', ()=>{
+  document.getElementById('dcRows').insertAdjacentHTML('beforeend', dcRowHtml('', '', ''));
+  const inputs = document.querySelectorAll('#dcRows .dc-name'); inputs[inputs.length - 1].focus();
+});
+document.getElementById('dcRows').addEventListener('click', e=>{
+  const b = e.target.closest('.dc-del'); if (!b) return;
+  b.closest('.dc-row').remove();
+});
 
 document.getElementById('dcSaveBtn').addEventListener('click', async ()=>{
-  const inside  = document.getElementById('dcInside').value;
-  const outside = document.getElementById('dcOutside').value;
-  if (inside === '' || outside === '' || Number(inside) < 0 || Number(outside) < 0){
-    showToast('দুটি এলাকার চার্জ সঠিকভাবে লিখুন'); return;
+  const list = [], seen = {};
+  for (const row of document.querySelectorAll('#dcRows .dc-row')){
+    let name = row.querySelector('.dc-name').value.trim();
+    const ch = row.querySelector('.dc-charge').value;
+    if (!name && ch === '') continue;
+    if (!name || ch === '' || Number(ch) < 0){ showToast('প্রতিটি এরিয়ার নাম ও চার্জ সঠিকভাবে লিখুন'); return; }
+    const orig = row.dataset.orig;
+    if (orig && name === areaLabel(orig)) name = orig;   // পুরোনো ডিফল্ট এরিয়ার নাম অপরিবর্তিত থাকলে আগের নামই থাকবে
+    const k = name.toLowerCase();
+    if (seen[k]){ showToast('একই নামের এরিয়া দুইবার দেওয়া যাবে না'); return; }
+    seen[k] = true;
+    list.push({ name, charge: Number(ch) });
   }
-  const settings = { deliveryInside: Number(inside), deliveryOutside: Number(outside) };
+  if (!list.length){ showToast('কমপক্ষে একটি ডেলিভারি এরিয়া দিন'); return; }
+  const settings = { deliveryAreas: list };
   const btn = document.getElementById('dcSaveBtn');
   btn.disabled = true; btn.textContent = 'সংরক্ষণ হচ্ছে…';
   try{
@@ -4035,7 +4112,8 @@ document.getElementById('dcSaveBtn').addEventListener('click', async ()=>{
     if (res && res.error) throw new Error(res.error);
     applyDeliverySettings(settings);
     mergeSettingsCache(settings);
-    showToast('ডেলিভারি চার্জ আপডেট হয়েছে');
+    renderDcRows();
+    showToast('ডেলিভারি এরিয়া ও চার্জ আপডেট হয়েছে');
   }catch(err){
     showToast('সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন');
   }
@@ -5309,13 +5387,14 @@ function cartLines(){
 function addToCart(id){
   const p = PRODUCTS.find(x=> String(x.id) === String(id));
   if (!p) return;
+  if (p.soldOut){ showToast('এই পণ্যের স্টক শেষ'); return; }
   const ex = CART.find(c=> String(c.id) === String(id));
   if (ex) ex.qty = Math.round((Number(ex.qty) + (isMeasure(p) ? (UNIT_STEP[unitOf(p)] || 0.5) : 1)) * 100) / 100;
   else CART.push({ id:String(id), qty:(unitOf(p) === 'GRAM' ? 100 : 1), color:'', size:'' });
   saveCart();
   showToast('কার্টে যোগ হয়েছে');
 }
-function cartArea(){ const c = document.querySelector('input[name="cartArea"]:checked'); return c ? c.value : 'Inside Feni'; }
+function cartArea(){ const c = document.querySelector('input[name="cartArea"]:checked'); return c ? c.value : firstAreaName(); }
 function cartOptsHtml(l){
   if (isMeasure(l.p)) return '';
   const colors = listOf(l.p.colors), sizes = listOf(l.p.sizes);
@@ -5327,8 +5406,7 @@ function cartOptsHtml(l){
 function renderCart(){
   const lines = cartLines();
   const box = document.getElementById('cartItems');
-  document.getElementById('cartAreaInside').textContent  = 'ফেনীর ভেতরে — ' + DELIVERY_CHARGES['Inside Feni'] + ' টাকা';
-  document.getElementById('cartAreaOutside').textContent = 'ফেনীর বাইরে — ' + DELIVERY_CHARGES['Outside Feni'] + ' টাকা';
+  renderAreaOptions();
   document.getElementById('cartForm').style.display = lines.length ? '' : 'none';
   document.getElementById('cartConfirmBtn').style.display = lines.length ? '' : 'none';
   if (!lines.length){ box.innerHTML = '<div class="empty-state">কার্ট খালি</div>'; return; }
@@ -5348,7 +5426,7 @@ function renderCart(){
 function updateCartTotals(){
   const lines = cartLines();
   const sub = Math.round(lines.reduce((s,l)=> s + l.price * l.qty, 0) * 100) / 100;
-  const dc = lines.length ? DELIVERY_CHARGES[cartArea()] : 0;
+  const dc = lines.length ? areaChargeOf(cartArea()) : 0;
   document.getElementById('cartSubtotal').textContent = money(sub);
   document.getElementById('cartDelivery').textContent = money(dc);
   document.getElementById('cartTotal').textContent = money(sub + dc);
@@ -5356,7 +5434,7 @@ function updateCartTotals(){
 function openCart(){ renderCart(); document.getElementById('cartScrim').classList.add('open'); }
 document.getElementById('cartBtn').addEventListener('click', openCart);
 document.getElementById('cartCloseBtn').addEventListener('click', ()=> document.getElementById('cartScrim').classList.remove('open'));
-document.querySelectorAll('input[name="cartArea"]').forEach(r=> r.addEventListener('change', updateCartTotals));
+document.getElementById('cartAreaOptions').addEventListener('change', updateCartTotals);
 document.addEventListener('click', e=>{
   const b = e.target.closest('.cart-btn');
   if (b){ e.stopPropagation(); addToCart(b.dataset.id); }
@@ -5397,7 +5475,7 @@ document.getElementById('cartConfirmBtn').addEventListener('click', async ()=>{
       const kg = isMeasure(l.p);
       const first = ids.length === 0;
       const sub = Math.round(l.price * l.qty * 100) / 100;
-      const dc = first ? DELIVERY_CHARGES[area] : 0;
+      const dc = first ? areaChargeOf(area) : 0;
       const order = {
         customerName:name.trim(), phone:phone.trim(), address:address.trim(),
         productName:l.p.name, category:l.p.category || '', quantity:l.qty, unit:unitOf(l.p),
