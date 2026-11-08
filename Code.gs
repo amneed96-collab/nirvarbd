@@ -158,6 +158,7 @@ function handlePost(body) {
     case 'updatePurchase':    return jsonResponse(updatePurchase(body.invoiceNo, body.purchase));
     case 'deletePurchase':    return jsonResponse(deletePurchase(body.invoiceNo));
     case 'payDue':            return jsonResponse(payDue(body.invoiceNo, body.amount, body.date, body.note));
+    case 'payAllDue':         return jsonResponse(payAllDue(body.date, body.note));
     case 'listAdmins':        return jsonResponse(listAdmins());
     case 'addAdmin':          return jsonResponse(addAdmin(body.admin));
     case 'updateAdmin':       return jsonResponse(updateAdmin(body.admin));
@@ -362,13 +363,28 @@ function getOrders(status) {
   return { orders: orders.reverse() };
 }
 
+// ছোট ক্রমিক আইডি: PREFIX-0001 (পুরোনো লম্বা আইডি হিসাবে ধরা হয় না)। LockService এর ভেতরে ডাকতে হবে
+function nextSeqId(sheet, colName, prefix) {
+  var c = colIndex(sheet, colName), max = 0;
+  if (c >= 0 && sheet.getLastRow() > 1) {
+    var re = new RegExp('^' + prefix + '-(\\d{1,6})$');
+    sheet.getRange(2, c + 1, sheet.getLastRow() - 1, 1).getValues().forEach(function(r) {
+      var m = String(r[0] || '').match(re);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+  }
+  var n = String(max + 1);
+  while (n.length < 4) n = '0' + n;
+  return prefix + '-' + n;
+}
+
 function saveOrder(order) {
   var offline = !!order && order.salesProcess === 'Offline';   // Sales in Shop — সরাসরি ডেলিভারি সম্পন্ন
   if (offline && !String(order.customerName || '').trim()) order.customerName = 'Shop Customer';
   if (!order || !order.productName || !order.customerName) return { error: 'তথ্য অসম্পূর্ণ' };
   var sheet   = ensureSheet('Orders');
   var headers = getHeaders(sheet);
-  var orderId = 'PRY-' + new Date().getTime();
+  var orderId = '';
   var ts      = new Date();
   var uom     = normalizeUnit(order.unit);
   var qty     = Number(order.quantity) || 0;
@@ -397,6 +413,10 @@ function saveOrder(order) {
   var total   = sub + dc;
 
   // মোবাইল নম্বর টেক্সট ফরম্যাটে (শুরুর ০ যাতে হারিয়ে না যায়)
+  var oLock = LockService.getScriptLock();
+  oLock.waitLock(15000);
+  try {
+  orderId = nextSeqId(sheet, 'orderId', 'PRY');
   appendRowText(sheet, headers, {
     'orderid':        orderId,
     'timestamp':      ts,
@@ -417,6 +437,7 @@ function saveOrder(order) {
     'status':         offline ? 'Delivery' : 'New',   // অনলাইন: নতুন অর্ডার → কনফার্মে Pending (বুকিং); শপ: সরাসরি Delivery
     'salesprocess':   offline ? 'Offline' : 'Online'
   }, ['phone']);
+  } finally { oLock.releaseLock(); }
 
   clearProductsCache();
   return { success:true, orderId:orderId, timestamp:ts.toISOString(),
@@ -826,13 +847,14 @@ function savePurchase(p) {
   var due = r2(payable - paid);
 
   var date = /^\d{4}-\d{2}-\d{2}$/.test(String(p.date || '')) ? String(p.date) : todayStr();
-  var invoiceNo = 'PUR-' + new Date().getTime();
+  var invoiceNo = '';
 
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
   try {
     var sheet   = ensureSheet('Purchases');
     var headers = getHeaders(sheet);
+    invoiceNo = nextSeqId(sheet, 'invoiceNo', 'PUR');
     appendRowText(sheet, headers, {
       'invoiceno': invoiceNo, 'date': date, 'company': company,
       'mobile': String(p.mobile || '').trim(), 'address': String(p.address || '').trim(),
@@ -969,6 +991,35 @@ function payDue(invoiceNo, amount, date, note) {
       return { success: true, paid: newPaid, due: newDue };
     }
     return { error: 'Invoice পাওয়া যায়নি' };
+  } finally { lock.releaseLock(); }
+}
+
+// সব Due Invoice একসাথে সম্পূর্ণ পরিশোধ (প্রতিটির জন্য আলাদা Payment রেকর্ড)
+function payAllDue(date, note) {
+  var pdate = /^\d{4}-\d{2}-\d{2}$/.test(String(date || '')) ? String(date) : todayStr();
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sheet = ensureSheet('Purchases');
+    var rows  = sheet.getDataRange().getValues();
+    var iC = colIndex(sheet, 'invoiceNo'), paidC = colIndex(sheet, 'paid'),
+        dueC = colIndex(sheet, 'due'), payC = colIndex(sheet, 'payable');
+    var pSheet = ensureSheet('Payments'), pHeaders = getHeaders(pSheet);
+    var count = 0, total = 0, stamp = new Date().getTime();
+    for (var i = 1; i < rows.length; i++) {
+      var due = r2(Number(rows[i][dueC]) || 0);
+      if (due <= 0.001) continue;
+      var newPaid = r2((Number(rows[i][paidC]) || 0) + due);
+      sheet.getRange(i + 1, paidC + 1).setValue(newPaid);
+      sheet.getRange(i + 1, dueC + 1).setValue(0);
+      appendRowText(pSheet, pHeaders, {
+        'paymentid': 'PAY-' + stamp + '-' + (count + 1), 'invoiceno': String(rows[i][iC]),
+        'date': pdate, 'amount': due, 'note': String(note || 'All Due Pay').trim().slice(0, 200), 'createdat': new Date()
+      }, ['date']);
+      count++; total = r2(total + due);
+    }
+    if (!count) return { error: 'কোনো Due নেই' };
+    return { success: true, count: count, total: total };
   } finally { lock.releaseLock(); }
 }
 

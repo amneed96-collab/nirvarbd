@@ -442,6 +442,11 @@
     padding:10px 12px; font-size:0.9rem; cursor:pointer;
     background:var(--bg);
   }
+  .field .area-option{ display:flex; align-items:center; gap:16px; margin-bottom:0; font-size:0.9rem; font-weight:500; color:var(--ink); }
+  .area-option span{ padding-left:2px; }
+  #nameField{ margin-top:20px; }
+  #phoneField, #addressField, #shopPriceField{ margin-top:14px; }
+  #footerRights{ cursor:default; }
   .area-option:has(input:checked){ border-color:var(--primary); background:var(--chip); }
   .area-option input{ width:auto; margin:0; accent-color:var(--primary); }
 
@@ -572,7 +577,7 @@
   #pane-cash > .acc{ display:block; border:none; margin:0; background:transparent; }
   #pane-cash > .acc > .acc-body{ border:1px solid var(--hairline); border-radius:12px; }
   /* টেবিল কলাম: Invoice ছোট, অ্যালাইনমেন্ট */
-  table.data-table .col-inv{ width:84px; max-width:84px; min-width:0; white-space:normal; word-break:break-all; line-height:1.25; font-size:0.74rem; padding-left:8px; padding-right:8px; text-align:left; }
+  table.data-table .col-inv{ width:auto; min-width:68px; white-space:nowrap; word-break:normal; line-height:1.25; font-size:0.78rem; padding-left:8px; padding-right:8px; text-align:left; }
   table.data-table th.col-inv{ text-align:center; }
   table.data-table .col-sl{ width:44px; max-width:44px; min-width:0; padding-left:6px; padding-right:6px; text-align:center; }
   table.data-table td.al-l{ text-align:left; } table.data-table td.al-c{ text-align:center; } table.data-table td.al-r{ text-align:right; }
@@ -685,7 +690,6 @@
     <nav class="navbar" id="navbar">
       <button class="nav-btn active" data-section="home">Home</button>
       <button class="nav-btn" data-section="about">About Us</button>
-      <button class="nav-btn" data-section="report">Authority</button>
     </nav>
     <div class="header-right">
       <button class="cart-icon-btn" id="cartBtn" type="button" aria-label="কার্ট" title="কার্ট">
@@ -1140,6 +1144,7 @@
               <div class="table-toolbar">
                 <button class="btn btn-outline btn-sm" id="dueRefreshBtn" type="button">রিফ্রেশ</button>
                 <button class="btn btn-outline btn-sm" id="duePrintBtn" type="button">🖨️ প্রিন্ট করুন</button>
+                <button class="btn btn-teal btn-sm" id="duePayAllBtn" type="button">💳 All Due Pay</button>
               </div>
               <div class="table-wrap" id="dueAllWrap"></div>
             </div>
@@ -2024,7 +2029,7 @@ function applySiteInfo(){
     (SITE.email ? `<div>✉️ <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a></div>` : '');
   document.getElementById('footerCredit').innerHTML =
     (SITE.address ? `<div>📍 ${esc(SITE.address)}</div>` : '') +
-    `<div>© ${new Date().getFullYear()} AM Shahed — সকল অধিকার সংরক্ষিত</div>`;
+    `<div id="footerRights">© ${new Date().getFullYear()} AM Shahed — সকল অধিকার সংরক্ষিত</div>`;
 }
 
 function applySocialLinks(){
@@ -2126,6 +2131,20 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
     if (btn.dataset.section === 'report') checkAdminGate();
     if (btn.dataset.section === 'home' && localStorage.getItem('proyojonbd_admin_unlocked') === 'yes') autoLockAdmin();
   });
+});
+
+/* ---------- লোগোতে ক্লিক করলে লগইন ফরম (মেনুতে Authority নেই) ---------- */
+function openAuthority(){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+  document.getElementById('section-report').classList.add('active');
+  navbar.classList.remove('open');
+  checkAdminGate();
+  window.scrollTo(0, 0);
+}
+// "সকল অধিকার সংরক্ষিত" লেখায় ক্লিক করলে লগইন ফরম
+document.getElementById('footerCredit').addEventListener('click', e=>{
+  if (e.target.closest('#footerRights')) openAuthority();
 });
 
 /* ---------- Admin PIN গেট ---------- */
@@ -2263,6 +2282,7 @@ document.getElementById('lockAdminBtn').addEventListener('click', ()=>{
   localStorage.removeItem('proyojonbd_admin_unlocked');
   localStorage.removeItem('proyojonbd_admin_name');
   closeAllAcc();
+  closeAllMenus();
   refreshLowStock();
   // Home-এ চলে যাওয়া
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -2782,7 +2802,7 @@ document.getElementById('confirmBuyBtn').addEventListener('click', async ()=>{
   btn.disabled = true;
   btn.textContent = shopMode ? 'সংরক্ষণ হচ্ছে…' : 'অর্ডার হচ্ছে…';
 
-  let result = { success:true, orderId:'PRY-' + Date.now(), timestamp:new Date().toISOString() };
+  let result = { success:true, orderId:'PRY-' + String(Date.now()).slice(-5), timestamp:new Date().toISOString() };
   if (API_URL){
     try{ result = await apiPost({ action:'order', order }); }
     catch(err){ showToast("শীটে অর্ডার পাঠানো যায়নি"); }
@@ -4063,6 +4083,8 @@ reportSubnavEl.querySelectorAll('button[data-pane]').forEach(btn=>{
 document.addEventListener('click', e=>{
   if (!document.getElementById('reportMenuWrap').contains(e.target)) setReportMenu(false);
 });
+// মেনু ও সব সাবমেনু বন্ধ (Home / লক করুন)
+function closeAllMenus(){ setReportMenu(false); setSubGroup('', false); }
 
 /* ===================== DELIVERY CHARGE SETTINGS (Report) ===================== */
 function dcRowHtml(name, charge, orig){
@@ -4628,6 +4650,19 @@ document.getElementById('dueAllWrap').addEventListener('click', e=>{
   renderDueViews();
 });
 document.getElementById('dueRefreshBtn').addEventListener('click', loadDue);
+// সব Due Invoice একসাথে পরিশোধ
+document.getElementById('duePayAllBtn').addEventListener('click', async e=>{
+  const dues = PURCHASES.filter(p=>p.due > 0.001);
+  if (!dues.length){ showToast('কোনো Due নেই'); return; }
+  const total = dues.reduce((a,p)=>a+p.due,0);
+  if (!ask(dues.length + 'টি Invoice-এর মোট ' + fmtN(total) + ' টাকা Due একসাথে পরিশোধ করবেন?')) return;
+  try{
+    const res = await withBusy(e.currentTarget, 'প্রক্রিয়াধীন…', ()=> apiPost({ action:'payAllDue', date:todayStr(), note:'All Due Pay' }));
+    if (res.error) throw new Error(res.error);
+    showToast(res.count + 'টি Invoice-এর ' + fmtN(res.total) + ' টাকা পরিশোধ হয়েছে');
+    await loadPurchases();
+  }catch(err){ showToast(err.message || 'পেমেন্ট করা যায়নি'); }
+});
 document.getElementById('duePrintBtn').addEventListener('click', ()=>{
   const dues = PURCHASES.filter(p=>p.due > 0.001);
   if (!dues.length){ showToast('কোনো Due নেই'); return; }
@@ -5191,7 +5226,7 @@ function renderInvests(){
   const list = sortDateDesc(INVESTS);
   if (!list.length){ wrap.innerHTML = '<div class="empty-state">এখনো কোনো Invest যুক্ত হয়নি</div>'; return; }
   wrap.innerHTML = `<table class="data-table"><thead><tr><th>#</th><th>Date</th><th>Name</th><th>Mobile No</th><th>Address</th><th>Amount</th><th></th></tr></thead><tbody>` +
-    list.map((x,i)=>`<tr><td>${i+1}</td><td>${dmy(x.date)}</td><td>${esc(x.name)}</td><td>${esc(x.mobile)}</td><td>${esc(x.address)}</td><td>${money(x.amount)}</td>
+    list.map((x,i)=>`<tr><td class="al-c">${i+1}</td><td class="al-c">${dmy(x.date)}</td><td class="al-l">${esc(x.name)}</td><td class="al-c">${esc(x.mobile)}</td><td class="al-l">${esc(x.address)}</td><td>${money(x.amount)}</td>
       <td class="row-actions"><button type="button" data-act="edit" data-id="${esc(x.id)}">Edit</button><button type="button" class="danger" data-act="del" data-id="${esc(x.id)}">Delete</button></td></tr>`).join('') +
     `</tbody><tfoot><tr><td colspan="5">সর্বমোট</td><td>${money(sumBy(list,x=>x.amount))}</td><td></td></tr></tfoot></table>`;
 }
@@ -5265,7 +5300,7 @@ function renderCash(k){
   if (!list.length){ wrap.innerHTML = `<div class="empty-state">এখনো কোনো ${c.title} যুক্ত হয়নি</div>`; return; }
   const who = k === 'dep' ? 'Depositor Name' : 'Withdrawer Name';
   wrap.innerHTML = `<table class="data-table"><thead><tr><th>#</th><th>Date</th><th>Description</th><th>Amount</th><th>${who}</th><th></th></tr></thead><tbody>` +
-    list.map((x,i)=>`<tr><td>${i+1}</td><td>${dmy(x.date)}</td><td>${esc(x.description)}</td><td>${money(x.amount)}</td><td>${esc(x.person)}</td>
+    list.map((x,i)=>`<tr><td>${i+1}</td><td>${dmy(x.date)}</td><td>${esc(x.description)}</td><td>${money(x.amount)}</td><td class="al-l">${esc(x.person)}</td>
       <td class="row-actions"><button type="button" data-act="edit" data-id="${esc(x.id)}">Edit</button><button type="button" class="danger" data-act="del" data-id="${esc(x.id)}">Delete</button></td></tr>`).join('') +
     `</tbody><tfoot><tr><td colspan="3">সর্বমোট</td><td>${money(sumBy(list,x=>x.amount))}</td><td colspan="2"></td></tr></tfoot></table>`;
 }
@@ -5482,7 +5517,7 @@ document.getElementById('cartConfirmBtn').addEventListener('click', async ()=>{
         color:kg ? '' : (l.c.color || ''), size:kg ? '' : (l.c.size || ''), unitPrice:l.price, subtotal:sub, deliveryArea:area, deliveryCharge:dc, total:sub + dc,
         noDelivery:!first
       };
-      let result = { success:true, orderId:'PRY-' + Date.now() + '-' + ids.length };
+      let result = { success:true, orderId:'PRY-' + String(Date.now()).slice(-5) + '-' + ids.length };
       if (API_URL){
         result = await apiPost({ action:'order', order });
         if (result && result.error) throw new Error(result.error);
@@ -5519,7 +5554,7 @@ function closeAllAcc(except){
 }
 // মেনু বদলালে বা অন্য পেজে গেলে সব ফরম বন্ধ
 document.querySelectorAll('#reportSubnav button[data-pane]:not([data-acc])').forEach(b=> b.addEventListener('click', ()=> closeAllAcc()));
-document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click', ()=> closeAllAcc()));
+document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click', ()=>{ closeAllAcc(); closeAllMenus(); }));
 
 /* ===================== LOW STOCK নোটিফিকেশন ===================== */
 const LOW_LIMIT_PCS = 6;   // পিস হলে ৬ বা কম
