@@ -1295,27 +1295,25 @@
       </div>
 
       <!-- ---------- INVEST ---------- -->
-      <div class="report-pane acc-row" id="pane-invest">
-        <div class="acc" data-acc="invest">
-          <button type="button" class="acc-btn" aria-expanded="false"><span>Invest</span><span class="chev">▾</span></button>
-          <div class="acc-body">
-            <div class="form-card">
-              <input type="hidden" id="invEditId">
-              <div class="form-grid">
-                <div class="field"><label>Date</label><input type="date" id="invDate"></div>
-                <div class="field"><label>Name</label><input type="text" id="invName"></div>
-                <div class="field"><label>Mobile No</label><input type="tel" id="invMobile"></div>
-                <div class="field"><label>Amount</label><input type="number" id="invAmount" min="0" step="any" inputmode="decimal"></div>
-                <div class="field full"><label>Address</label><input type="text" id="invAddress"></div>
-              </div>
-              <div class="form-actions">
-                <button class="btn btn-outline" id="invCancel" type="button" style="display:none;">বাতিল</button>
-                <button class="btn btn-teal" id="invSave" type="button">সংরক্ষণ করুন</button>
-              </div>
-            </div>
-            <div class="table-wrap" id="invTable"><div class="empty-state">লোড হচ্ছে…</div></div>
+      <div class="report-pane" id="pane-invest">
+        <div class="table-toolbar" style="justify-content:space-between;">
+          <button class="btn btn-orange btn-sm" id="invNewBtn" type="button">+ New Invest</button>
+        </div>
+        <div class="form-card" id="invFormCard" style="display:none;">
+          <input type="hidden" id="invEditId">
+          <div class="form-grid">
+            <div class="field"><label>Date</label><input type="date" id="invDate"></div>
+            <div class="field"><label>Name</label><input type="text" id="invName"></div>
+            <div class="field"><label>Mobile No</label><input type="tel" id="invMobile"></div>
+            <div class="field"><label>Amount</label><input type="number" id="invAmount" min="0" step="any" inputmode="decimal"></div>
+            <div class="field full"><label>Address</label><input type="text" id="invAddress"></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-outline" id="invCancel" type="button">বাতিল</button>
+            <button class="btn btn-teal" id="invSave" type="button">সংরক্ষণ করুন</button>
           </div>
         </div>
+        <div class="table-wrap" id="invTable"><div class="empty-state">লোড হচ্ছে…</div></div>
       </div>
 
       <!-- ---------- CASH ---------- -->
@@ -2281,8 +2279,7 @@ function autoLockAdmin(){
 document.getElementById('lockAdminBtn').addEventListener('click', ()=>{
   localStorage.removeItem('proyojonbd_admin_unlocked');
   localStorage.removeItem('proyojonbd_admin_name');
-  closeAllAcc();
-  closeAllMenus();
+  resetAdminUi();
   refreshLowStock();
   // Home-এ চলে যাওয়া
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -2997,7 +2994,7 @@ function renderIncomes(){
   const wrap = document.getElementById('incTableWrap');
   if (!INCOMES.length){ wrap.innerHTML = '<div class="empty-state">এখনো কোনো Income যুক্ত হয়নি</div>'; return; }
   wrap.innerHTML = `<table class="data-table"><thead><tr><th class="col-inv">Invoice</th><th>Date</th><th style="text-align:left;">Description</th><th>Amount</th><th></th></tr></thead><tbody>` +
-    INCOMES.map(x=>`<tr><td class="col-inv">${esc(x.invoiceNo)}</td><td>${dmy(x.date)}</td>
+    INCOMES.map(x=>`<tr><td class="col-inv">${esc(x.invoiceNo)}</td><td class="al-c">${dmy(x.date)}</td>
       <td style="text-align:left;">${(x.items||[]).map(it=> esc(it.description||'—') + ' (' + fmtN(it.amount) + ')').join('<br>')}</td>
       <td>${fmtN(x.total)}</td>
       <td class="row-actions"><div class="act-wrap"><button type="button" data-iprint="${esc(x.invoiceNo)}">🖨️ Print</button><button type="button" data-iedit="${esc(x.invoiceNo)}">Edit</button><button type="button" class="danger" data-idel="${esc(x.invoiceNo)}">Delete</button></div></td></tr>`).join('') +
@@ -3920,7 +3917,7 @@ function renderExpenseTable(){
       <thead><tr><th>Voucher No</th><th>তারিখ</th><th>ক্যাটাগরি</th><th>বিবরণ</th><th>পরিমাণ</th><th></th></tr></thead>
       <tbody>
         ${_currentExpenses.map(e=>`
-          <tr><td>${esc(e.voucherNo||'')}</td><td>${expDateStr(e)}</td><td>${e.category||''}</td><td>${e.description||''}</td><td>${money(e.amount)}</td>
+          <tr><td class="al-c">${esc(e.voucherNo||'')}</td><td class="al-c">${expDateStr(e)}</td><td class="al-l">${esc(e.category||'')}</td><td class="al-l">${esc(e.description||'')}</td><td>${money(e.amount)}</td>
             <td class="row-actions" style="white-space:nowrap;"><button type="button" data-act="edit" data-id="${esc(e.expenseId)}">Edit</button><button type="button" class="danger" data-act="del" data-id="${esc(e.expenseId)}">Delete</button><button type="button" data-act="print" data-id="${esc(e.expenseId)}">Print</button></td></tr>
         `).join('')}
       </tbody>
@@ -4085,6 +4082,19 @@ document.addEventListener('click', e=>{
 });
 // মেনু ও সব সাবমেনু বন্ধ (Home / লক করুন)
 function closeAllMenus(){ setReportMenu(false); setSubGroup('', false); }
+// Home / লক করুন: মেনু, সাবমেনু, ফরম সব বন্ধ এবং প্যানেল শুরুর অবস্থায়
+function resetAdminUi(){
+  closeAllAcc(); closeAllMenus();
+  ['depFormCard','wdFormCard','invFormCard'].forEach(id=>{ const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  try{ resetInvForm(); }catch(e){}
+  ['dep','wd'].forEach(k=>{ try{ resetCashForm(k); }catch(e){} });
+  ['resetIncForm','resetExpForm'].forEach(fn=>{ try{ if (typeof window[fn] === 'function') window[fn](); }catch(e){} });
+  document.querySelectorAll('.report-pane').forEach(p=>p.classList.remove('active'));
+  const dp = document.getElementById('pane-dashboard'); if (dp) dp.classList.add('active');
+  document.querySelectorAll('#reportSubnav button').forEach(b=>b.classList.remove('active'));
+  const db = document.querySelector('#reportSubnav button[data-pane="dashboard"]'); if (db) db.classList.add('active');
+  const lbl = document.getElementById('reportMenuLabel'); if (lbl) lbl.textContent = 'Dashboard';
+}
 
 /* ===================== DELIVERY CHARGE SETTINGS (Report) ===================== */
 function dcRowHtml(name, charge, orig){
@@ -5234,10 +5244,17 @@ function resetInvForm(){
   ['invEditId','invName','invMobile','invAddress','invAmount'].forEach(id=> document.getElementById(id).value = '');
   document.getElementById('invDate').value = todayStr();
   document.getElementById('invSave').textContent = 'সংরক্ষণ করুন';
-  document.getElementById('invCancel').style.display = 'none';
 }
 document.getElementById('invDate').value = todayStr();
-document.getElementById('invCancel').addEventListener('click', resetInvForm);
+function showInvForm(show){ document.getElementById('invFormCard').style.display = show ? 'block' : 'none'; }
+document.getElementById('invCancel').addEventListener('click', ()=>{ resetInvForm(); showInvForm(false); });
+// বাটনে ক্লিক করলে ফরম খোলে, আবার ক্লিক করলে বন্ধ হয়
+document.getElementById('invNewBtn').addEventListener('click', ()=>{
+  const open = document.getElementById('invFormCard').style.display === 'block';
+  resetInvForm(); showInvForm(!open);
+});
+// Invest মেনুতে ক্লিক করলে তালিকা দেখায়, ফরম বন্ধ থাকে
+document.querySelector('#reportSubnav button[data-pane="invest"]').addEventListener('click', ()=>{ resetInvForm(); showInvForm(false); loadInvests(); });
 document.getElementById('invSave').addEventListener('click', async ()=>{
   const id = document.getElementById('invEditId').value;
   const rec = {
@@ -5254,13 +5271,14 @@ document.getElementById('invSave').addEventListener('click', async ()=>{
       apiPost(id ? { action:'updateInvest', record:{ ...rec, id } } : { action:'addInvest', record:rec }));
     if (res.error) throw new Error(res.error);
     showToast(id ? 'Invest আপডেট হয়েছে' : 'Invest যুক্ত হয়েছে');
-    resetInvForm(); loadInvests();
+    resetInvForm(); showInvForm(false); loadInvests();
   }catch(e){ showToast(e.message || 'সংরক্ষণ করা যায়নি'); }
 });
 document.getElementById('invTable').addEventListener('click', async e=>{
   const b = e.target.closest('button[data-act]'); if (!b) return;
   const x = INVESTS.find(v=> v.id === b.dataset.id); if (!x) return;
   if (b.dataset.act === 'edit'){
+    showInvForm(true);
     document.getElementById('invEditId').value = x.id;
     document.getElementById('invDate').value = x.date;
     document.getElementById('invName').value = x.name;
@@ -5268,7 +5286,6 @@ document.getElementById('invTable').addEventListener('click', async e=>{
     document.getElementById('invAddress').value = x.address;
     document.getElementById('invAmount').value = x.amount;
     document.getElementById('invSave').textContent = 'আপডেট করুন';
-    document.getElementById('invCancel').style.display = '';
     document.getElementById('invName').focus();
     document.getElementById('invName').scrollIntoView({ behavior:'smooth', block:'center' });
   } else {
@@ -5384,18 +5401,31 @@ function renderCashReport(){
       wIn.map(x=>`<tr><td>${dmy(x.date)}</td><td>${esc(x.description)}</td><td>${esc(x.person)}</td><td>${money(x.amount)}</td></tr>`),
       `<tr><td colspan="3">সর্বমোট</td><td>${money(wT)}</td></tr>`)}`;
   document.getElementById('crpBody').innerHTML = `<div class="rpt-period">${PERIOD_LABELS[CRP.kind]} Cash রিপোর্ট — ${r.label}</div>` + html;
+  // প্রিন্টে কার্ড নেই: Deposit, Withdrawal ও বর্তমান ক্যাশ
+  const curCash = sumBy(D, x=>x.amount) - sumBy(W, x=>x.amount);
+  const sumRow = (a,b,strong)=> `<tr><td style="text-align:left;">${strong ? '<b>'+a+'</b>' : a}</td><td style="text-align:right;">${strong ? '<b>'+money(b)+'</b>' : money(b)}</td></tr>`;
+  CRP._printHtml =
+    `<h3 class="rpt-h">Deposit</h3>` +
+    rtbl(['Date','Description','Depositor Name','Amount'],
+      dIn.map(x=>`<tr><td>${dmy(x.date)}</td><td style="text-align:left;">${esc(x.description)}</td><td style="text-align:left;">${esc(x.person)}</td><td style="text-align:right;">${money(x.amount)}</td></tr>`),
+      `<tr><td colspan="3">সর্বমোট Deposit</td><td style="text-align:right;">${money(dT)}</td></tr>`) +
+    `<h3 class="rpt-h">Withdrawal</h3>` +
+    rtbl(['Date','Description','Withdrawer Name','Amount'],
+      wIn.map(x=>`<tr><td>${dmy(x.date)}</td><td style="text-align:left;">${esc(x.description)}</td><td style="text-align:left;">${esc(x.person)}</td><td style="text-align:right;">${money(x.amount)}</td></tr>`),
+      `<tr><td colspan="3">সর্বমোট Withdrawal</td><td style="text-align:right;">${money(wT)}</td></tr>`) +
+    `<h3 class="rpt-h">বর্তমান ক্যাশ</h3>` +
+    rtbl(['বিবরণ','টাকা'], [ sumRow('মোট Deposit', sumBy(D, x=>x.amount)), sumRow('মোট Withdrawal', sumBy(W, x=>x.amount)), sumRow('বর্তমান ক্যাশ', curCash, true) ]);
   CRP._html = html; CRP._label = PERIOD_LABELS[CRP.kind] + ' — ' + r.label;
 }
 document.getElementById('crpRefreshBtn').addEventListener('click', loadCashReport);
 document.getElementById('crpPrintBtn').addEventListener('click', ()=>{
   if (!CRP._html){ showToast('আগে রিপোর্ট লোড হতে দিন'); return; }
-  printReportDoc('Cash Report', CRP._label, CRP._html);
+  printReportDoc('Cash Report', CRP._label, CRP._printHtml || CRP._html);
 });
 
 /* ---------- হুক: মেনু/অ্যাকর্ডিয়ন খুললে ডেটা লোড ---------- */
 Object.assign(ACC_HOOKS, {
   incomeform: ()=>{ if (!_incEditNo) resetIncForm(); loadIncomes(); },
-  invest:     ()=> loadInvests(),
   deposit:    ()=>{ resetCashForm('dep'); showCashForm('dep',false); loadCash('dep'); },
   withdrawal: ()=>{ resetCashForm('wd');  showCashForm('wd',false);  loadCash('wd'); },
   cashreport: ()=> loadCashReport()
@@ -5554,7 +5584,7 @@ function closeAllAcc(except){
 }
 // মেনু বদলালে বা অন্য পেজে গেলে সব ফরম বন্ধ
 document.querySelectorAll('#reportSubnav button[data-pane]:not([data-acc])').forEach(b=> b.addEventListener('click', ()=> closeAllAcc()));
-document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click', ()=>{ closeAllAcc(); closeAllMenus(); }));
+document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click', ()=>{ closeAllAcc(); closeAllMenus(); if (b.dataset.section === 'home') resetAdminUi(); }));
 
 /* ===================== LOW STOCK নোটিফিকেশন ===================== */
 const LOW_LIMIT_PCS = 6;   // পিস হলে ৬ বা কম
