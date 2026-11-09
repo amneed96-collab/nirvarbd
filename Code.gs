@@ -21,7 +21,9 @@ var SHEET_SCHEMAS = {
 
 var DEFAULT_SETTINGS = { deliveryInside: 60, deliveryOutside: 150 };
 var PRODUCTS_CACHE_KEY = 'products_v3';
-var SETTINGS_CACHE_KEY = 'settings_v2';
+var SETTINGS_CACHE_KEY = 'settings_v3';
+var DEFAULT_PRODUCT_CATS = ['Natural','Computer','Hardware','Mobile','Software','Website','Electronic','Cloth','Honey','Oil','Foods','Others'];
+var DEFAULT_EXPENSE_CATS = ['পণ্য ক্রয়','ডেলিভারি খরচ','বিজ্ঞাপন','বেতন','অন্যান্য'];
 var TZ = 'Asia/Dhaka';
 
 /* ======== SHEET AUTO-SETUP ======== */
@@ -671,12 +673,16 @@ function getSettings() {
   var sheet = ensureSheet('Settings');
   var rows  = sheet.getDataRange().getValues();
   var out   = { deliveryInside: DEFAULT_SETTINGS.deliveryInside, deliveryOutside: DEFAULT_SETTINGS.deliveryOutside };
-  var areasRaw = null;
+  var areasRaw = null, catsRaw = null, expCatsRaw = null;
   for (var i = 1; i < rows.length; i++) {
     var k = String(rows[i][0]).trim();
     var v = rows[i][1];
     if (k === 'deliveryAreas') {
       try { var pa = JSON.parse(String(v)); if (Array.isArray(pa)) areasRaw = pa; } catch (e) {}
+    } else if (k === 'categories') {
+      try { var pc = JSON.parse(String(v)); if (Array.isArray(pc)) catsRaw = pc; } catch (e) {}
+    } else if (k === 'expenseCategories') {
+      try { var pe = JSON.parse(String(v)); if (Array.isArray(pe)) expCatsRaw = pe; } catch (e) {}
     } else if (NUM_SETTING_KEYS.indexOf(k) >= 0) {
       if (v !== '' && !isNaN(Number(v))) out[k] = Number(v);
     } else if (TEXT_SETTING_KEYS.indexOf(k) >= 0) {
@@ -686,7 +692,22 @@ function getSettings() {
   var areas = cleanAreas(areasRaw);
   if (!areas.length) areas = [ { name: 'Inside Feni', charge: out.deliveryInside }, { name: 'Outside Feni', charge: out.deliveryOutside } ];
   out.deliveryAreas = areas;
+  var cc = cleanNames(catsRaw), ec = cleanNames(expCatsRaw);
+  out.categories = cc.length ? cc : DEFAULT_PRODUCT_CATS.slice();
+  out.expenseCategories = ec.length ? ec : DEFAULT_EXPENSE_CATS.slice();
   try { CacheService.getScriptCache().put(SETTINGS_CACHE_KEY, JSON.stringify(out), 300); } catch (e) {}
+  return out;
+}
+
+// নামের তালিকা পরিষ্কার: ফাঁকা বাদ, ডুপ্লিকেট বাদ
+function cleanNames(list) {
+  var seen = {}, out = [];
+  (list || []).forEach(function(n) {
+    var name = String(n === null || n === undefined ? '' : n).trim().slice(0, 40);
+    if (!name || seen[name.toLowerCase()]) return;
+    seen[name.toLowerCase()] = true;
+    out.push(name);
+  });
   return out;
 }
 
@@ -729,6 +750,11 @@ function saveSettings(s) {
   NUM_SETTING_KEYS.forEach(function(key) {
     if (s[key] === undefined || s[key] === '' || isNaN(Number(s[key])) || Number(s[key]) < 0) return;
     put(key, Number(s[key]), false);
+  });
+  ['categories', 'expenseCategories'].forEach(function(key) {
+    if (!Array.isArray(s[key])) return;
+    var lst = cleanNames(s[key]);
+    if (lst.length) put(key, JSON.stringify(lst), true);
   });
   if (Array.isArray(s.deliveryAreas)) {
     var ar = cleanAreas(s.deliveryAreas);
