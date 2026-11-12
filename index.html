@@ -714,6 +714,19 @@
     .hamburger{ flex:none; }
     .header-search-box{ position:fixed; left:10px; right:10px; top:58px; min-width:0; }
   }
+
+  /* ===== v10: স্লাইড ব্যানার (৩:১, বক্স ভরে ফিট) + পেমেন্ট ধাপ ===== */
+  .hero{ padding:8px 10px 10px; }
+  @media (min-width:781px){ .hero{ padding:12px 20px 14px; } }
+  .hero .lang-switch{ position:static; width:max-content; margin:0 0 8px auto; }
+  .hero .lang-switch button{ padding:4px 12px; font-size:0.75rem; }
+  .hero .hero-slides.has-pics{ aspect-ratio:3/1; min-height:0; border:none; border-radius:8px; background:#EDEDE8; box-shadow:0 2px 10px rgba(26,31,54,0.12); }
+  .hero .hero-slides.has-pics .hero-slide{ padding:0; }
+  .hero .hero-slides.has-pics .hero-pic{ object-fit:cover; object-position:center; }
+  .hero-slide[data-first].off{ display:none; }
+  .hero-dots{ margin-top:8px; }
+  .pay-sub{ margin:8px 0 0; padding:10px; border:1px dashed var(--hairline); border-radius:8px; display:grid; gap:8px; }
+  .pay-sub-title{ font-size:0.8rem; font-weight:700; color:var(--ink-soft); margin:2px 0 -2px; }
 </style>
 </head>
 <body>
@@ -1390,7 +1403,7 @@
           <button class="btn btn-orange btn-sm" id="slideAddBtn" type="button">+ স্লাইডের ছবি যোগ করুন</button>
           <input type="file" id="slideFile" accept="image/*" multiple style="display:none;">
         </div>
-        <p style="font-size:0.82rem;color:var(--ink-soft);margin:4px 0 10px;">একসাথে একাধিক ছবি বাছাই করা যাবে। ছবিগুলো এই তালিকার সিরিয়ালে স্লাইডে দেখাবে। প্রস্তাবিত ব্যানার সাইজ: <b>১৬০০ × ৪০০ পিক্সেল</b> (৪:১) (JPG/WebP, ২৫০ KB এর নিচে)। স্লাইডের বক্স সবসময় একই মাপের থাকে; ছবি বড় বা অন্য মাপের হলেও কাটা পড়ে না, বক্সের ভেতরে পুরোটা ফিট হয়।</p>
+        <p style="font-size:0.82rem;color:var(--ink-soft);margin:4px 0 10px;">একসাথে একাধিক ছবি বাছাই করা যাবে। ছবিগুলো এই তালিকার সিরিয়ালে স্লাইডে দেখাবে। প্রস্তাবিত ব্যানার সাইজ: <b>১২০০ × ৪০০ পিক্সেল</b> (৩:১) (JPG/WebP, ২০০ KB এর নিচে)। ছবি সবসময় পুরো বক্স জুড়ে বসে (কম্পিউটার ও মোবাইলে একই অনুপাত)। অন্য মাপের ছবি দিলে শুধু চারপাশ সামান্য কাটতে পারে, তাই লেখা/লোগো মাঝখানে রাখুন।</p>
         <div id="slideStatus" style="font-size:0.85rem;margin-bottom:8px;"></div>
         <div class="table-wrap" id="slideList"><div class="empty-state">লোড হচ্ছে…</div></div>
       </div>
@@ -2654,7 +2667,7 @@ document.getElementById('detailCartBtn').addEventListener('click', ()=>{ if (det
 /* ---------- হিরো স্লাইডার: প্রথমে লেখা, তারপর একটির পর একটি পণ্য (প্রতি ৩ সেকেন্ড) ---------- */
 const HERO_INTERVAL_MS = 3000;
 let heroIdx = 0, heroTimer = null, heroSig = '';
-function heroSlideEls(){ return Array.from(document.querySelectorAll('#heroSlides .hero-slide')); }
+function heroSlideEls(){ return Array.from(document.querySelectorAll('#heroSlides .hero-slide:not(.off)')); }
 function showHero(i){
   const slides = heroSlideEls();
   if (!slides.length) return;
@@ -2690,12 +2703,15 @@ function buildHeroSlides(){
   heroSig = sig;
   const wrap = document.getElementById('heroSlides');
   wrap.querySelectorAll('.hero-slide.pic, .hero-slide.prod').forEach(n=>n.remove());
-  urls.forEach(u=>{
+  urls.forEach((u,k)=>{
     const el = document.createElement('div');
     el.className = 'hero-slide pic';
-    el.innerHTML = `<img class="hero-pic" src="${esc(u)}" alt="" loading="lazy" decoding="async">`;
+    el.innerHTML = `<img class="hero-pic" src="${esc(u)}" alt="" ${k === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" draggable="false">`;
     wrap.appendChild(el);
   });
+  const first = wrap.querySelector('.hero-slide[data-first]');
+  if (first) first.classList.toggle('off', urls.length > 0);   // ছবি থাকলে শুধু ব্যানার ছবি ঘুরবে
+  wrap.classList.toggle('has-pics', urls.length > 0);
   const n = heroSlideEls().length;
   wrap.classList.toggle('multi', n > 1);
   document.getElementById('heroDots').innerHTML = n > 1 ? Array.from({length:n}).map((_,k)=>`<span data-i="${k}"></span>`).join('') : '';
@@ -4407,25 +4423,41 @@ function applyPaymentSettings(s){
   PAY_METHODS = s.paymentMethods;
   renderPayOptions();
 }
-function renderPayOptions(reset){
-  PAY_UI.forEach(u=>{
-    const box = document.getElementById(u.opt), field = document.getElementById(u.field);
-    if (!box || !field) return;
-    const cur = reset ? PAY_COD : ((document.querySelector('input[name="' + u.radio + '"]:checked') || {}).value || PAY_COD);
-    const sel = (cur === PAY_COD || PAY_METHODS.some(m=>m.name === cur)) ? cur : PAY_COD;
-    box.innerHTML =
-      `<label class="area-option"><input type="radio" name="${u.radio}" value="${PAY_COD}"${sel === PAY_COD ? ' checked' : ''}><span>ক্যাশ অন ডেলিভারি</span></label>` +
-      PAY_METHODS.map(m=>`<label class="area-option"><input type="radio" name="${u.radio}" value="${esc(m.name)}"${sel === m.name ? ' checked' : ''}><span>${esc(m.name)} <small style="color:var(--ink-soft);">(${payTypeLabel(m.type)})</small></span></label>`).join('');
-    const hide = !PAY_METHODS.length || (u.pre === 'pay' && field.dataset.shop === '1');
-    field.style.display = hide ? 'none' : '';
-    renderPayDetail(u);
-  });
+function payChecked(name){ return (document.querySelector('input[name="' + name + '"]:checked') || {}).value || ''; }
+function renderPayOne(u, reset){
+  const box = document.getElementById(u.opt), field = document.getElementById(u.field);
+  if (!box || !field) return;
+  const hasM = PAY_METHODS.some(m=>m.type !== 'bank'), hasB = PAY_METHODS.some(m=>m.type === 'bank');
+  let mode = reset ? 'cod' : (payChecked(u.radio + 'Mode') || 'cod');
+  if (!PAY_METHODS.length) mode = 'cod';
+  let type = reset ? '' : payChecked(u.radio + 'Type');
+  if (type !== 'mobile' && type !== 'bank') type = '';
+  if (type === 'mobile' && !hasM) type = '';
+  if (type === 'bank' && !hasB) type = '';
+  if (!type) type = hasM ? 'mobile' : 'bank';
+  const list = PAY_METHODS.filter(m=> (m.type === 'bank') === (type === 'bank'));
+  let cur = reset ? '' : payChecked(u.radio);
+  if (!list.some(m=>m.name === cur)) cur = list.length ? list[0].name : '';
+  const rad = (nm, v, on, label)=> `<label class="area-option"><input type="radio" name="${nm}" value="${esc(v)}"${on ? ' checked' : ''}><span>${label}</span></label>`;
+  let html = rad(u.radio + 'Mode', 'cod', mode === 'cod', 'ক্যাশ অন ডেলিভারি') + rad(u.radio + 'Mode', 'pay', mode === 'pay', 'পেমেন্ট');
+  if (mode === 'pay'){
+    html += '<div class="pay-sub"><div class="pay-sub-title">পেমেন্টের ধরন</div>';
+    if (hasM) html += rad(u.radio + 'Type', 'mobile', type === 'mobile', 'মোবাইল ব্যাংকিং');
+    if (hasB) html += rad(u.radio + 'Type', 'bank', type === 'bank', 'ব্যাংক');
+    html += '<div class="pay-sub-title">' + (type === 'bank' ? 'ব্যাংক বাছুন' : 'মোবাইল ব্যাংকিং বাছুন') + '</div>';
+    html += list.map(m=> rad(u.radio, m.name, m.name === cur, esc(m.name))).join('') + '</div>';
+  }
+  box.innerHTML = html;
+  field.style.display = (!PAY_METHODS.length || (u.pre === 'pay' && field.dataset.shop === '1')) ? 'none' : '';
+  renderPayDetail(u);
 }
+function renderPayOptions(reset){ PAY_UI.forEach(u=> renderPayOne(u, reset)); }
 function renderPayDetail(u){
   const wrap = document.getElementById(u.detail);
-  const v = (document.querySelector('input[name="' + u.radio + '"]:checked') || {}).value || PAY_COD;
-  const m = PAY_METHODS.find(x=>x.name === v);
-  if (!m || v === PAY_COD){ wrap.innerHTML = ''; return; }
+  const mode = payChecked(u.radio + 'Mode') || 'cod';
+  const v = payChecked(u.radio);
+  const m = mode === 'pay' ? PAY_METHODS.find(x=>x.name === v) : null;
+  if (!m){ wrap.innerHTML = ''; return; }
   const bank = m.type === 'bank';
   wrap.innerHTML = `<div class="pay-box">
       <div><b>${payTypeLabel(m.type)}:</b> ${esc(m.name)}</div>
@@ -4447,7 +4479,7 @@ function updatePayAmt(){
   if (pa && a) pa.textContent = a.textContent;
   if (pc && c) pc.textContent = c.textContent;
 }
-PAY_UI.forEach(u=> document.getElementById(u.opt).addEventListener('change', ()=> renderPayDetail(u)));
+PAY_UI.forEach(u=> document.getElementById(u.opt).addEventListener('change', ()=> renderPayOne(u)));
 document.addEventListener('click', e=>{
   const b = e.target.closest('.pay-copy'); if (!b) return;
   const t = b.dataset.copy || '';
@@ -4455,8 +4487,10 @@ document.addEventListener('click', e=>{
 });
 // অর্ডার ফরম থেকে পেমেন্ট তথ্য সংগ্রহ (ভুল থাকলে null)
 function collectPayment(u){
-  const v = (document.querySelector('input[name="' + u.radio + '"]:checked') || {}).value || PAY_COD;
-  if (!PAY_METHODS.length || v === PAY_COD) return { paymentMethod: PAY_COD };
+  const mode = payChecked(u.radio + 'Mode') || 'cod';
+  if (!PAY_METHODS.length || mode !== 'pay') return { paymentMethod: PAY_COD };
+  const v = payChecked(u.radio);
+  if (!v){ showToast('পেমেন্টের মাধ্যম বাছুন'); return null; }
   const fromEl = document.getElementById(u.pre + 'From'), trxEl = document.getElementById(u.pre + 'Trx');
   if (!fromEl.value.trim()){ showToast('যে নম্বর/অ্যাকাউন্ট থেকে টাকা পাঠিয়েছেন তা লিখুন'); fromEl.focus(); return null; }
   if (!trxEl.value.trim()){ showToast('ট্রানজেকশন আইডি (TrxID) লিখুন'); trxEl.focus(); return null; }
