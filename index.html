@@ -722,7 +722,7 @@
   .hero .lang-switch button{ padding:4px 12px; font-size:0.75rem; }
   .hero .hero-slides.has-pics{ aspect-ratio:3/1; min-height:0; border:none; border-radius:8px; background:#EDEDE8; box-shadow:0 2px 10px rgba(26,31,54,0.12); }
   .hero .hero-slides.has-pics .hero-slide{ padding:0; }
-  .hero .hero-slides.has-pics .hero-pic{ object-fit:cover; object-position:center; }
+  .hero .hero-slides.has-pics .hero-pic{ object-fit:fill; }
   .hero-slide[data-first].off{ display:none; }
   .hero-dots{ margin-top:8px; }
   .pay-sub{ margin:8px 0 0; padding:10px; border:1px dashed var(--hairline); border-radius:8px; display:grid; gap:8px; }
@@ -1403,7 +1403,7 @@
           <button class="btn btn-orange btn-sm" id="slideAddBtn" type="button">+ স্লাইডের ছবি যোগ করুন</button>
           <input type="file" id="slideFile" accept="image/*" multiple style="display:none;">
         </div>
-        <p style="font-size:0.82rem;color:var(--ink-soft);margin:4px 0 10px;">একসাথে একাধিক ছবি বাছাই করা যাবে। ছবিগুলো এই তালিকার সিরিয়ালে স্লাইডে দেখাবে। প্রস্তাবিত ব্যানার সাইজ: <b>১২০০ × ৪০০ পিক্সেল</b> (৩:১) (JPG/WebP, ২০০ KB এর নিচে)। ছবি সবসময় পুরো বক্স জুড়ে বসে (কম্পিউটার ও মোবাইলে একই অনুপাত)। অন্য মাপের ছবি দিলে শুধু চারপাশ সামান্য কাটতে পারে, তাই লেখা/লোগো মাঝখানে রাখুন।</p>
+        <p style="font-size:0.82rem;color:var(--ink-soft);margin:4px 0 10px;">একসাথে একাধিক ছবি বাছাই করা যাবে। ছবিগুলো এই তালিকার সিরিয়ালে স্লাইডে দেখাবে। প্রস্তাবিত ব্যানার সাইজ: <b>১২০০ × ৪০০ পিক্সেল</b> (৩:১) (JPG/WebP, ২০০ KB এর নিচে)। ছবি সবসময় পুরো বক্স জুড়ে বসে (কম্পিউটার ও মোবাইলে একই অনুপাত)। অন্য মাপের ছবি দিলে কিছু কাটা পড়ে না, ছবি বক্সের মাপে সামান্য চেপে/টেনে বসে; তাই সবচেয়ে ভালো ফল পেতে ৩:১ অনুপাতের ছবি দিন।</p>
         <div id="slideStatus" style="font-size:0.85rem;margin-bottom:8px;"></div>
         <div class="table-wrap" id="slideList"><div class="empty-state">লোড হচ্ছে…</div></div>
       </div>
