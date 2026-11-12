@@ -5,7 +5,8 @@
 
 var SHEET_SCHEMAS = {
   'Products': ['id','name','category','unit','desc','price','discount','stock','image','status','colors','sizes'],
-  'Orders':   ['orderId','timestamp','customerName','phone','productName','category','deliveryArea','address','quantity','unit','color','size','unitPrice','subtotal','deliveryCharge','total','status','salesProcess'],
+  'Orders':   ['orderId','timestamp','customerName','phone','productName','category','deliveryArea','address','quantity','unit','color','size','unitPrice','subtotal','deliveryCharge','total','status','salesProcess','paymentMethod','paymentFrom','trxId'],
+  'Slides': ['slideId','image','sort','createdAt'],
   'Expenses': ['expenseId','timestamp','category','description','amount','voucherNo','date'],
   'About':    ['key','value','updatedAt'],
   'Settings': ['key','value','updatedAt'],
@@ -117,6 +118,7 @@ function doGet(e) {
   // প্রতিটি হ্যান্ডলার নিজেই ensureSheet() কল করে — তাই এখানে সব শীট চেক করা হয় না (দ্রুত রেসপন্সের জন্য)
   var action = e.parameter.action;
   if (action === 'products') return jsonResponse(getProducts());
+  if (action === 'slides')   return jsonResponse(getSlides());
   if (action === 'settings') return jsonResponse({ settings: getSettings() });
   if (action === 'items')     return jsonResponse(getItems());
   if (action === 'purchases') return jsonResponse(getPurchases());
@@ -161,6 +163,9 @@ function handlePost(body) {
     case 'deletePurchase':    return jsonResponse(deletePurchase(body.invoiceNo));
     case 'payDue':            return jsonResponse(payDue(body.invoiceNo, body.amount, body.date, body.note));
     case 'payAllDue':         return jsonResponse(payAllDue(body.date, body.note));
+    case 'addSlide':          return jsonResponse(addSlide(body.image));
+    case 'deleteSlide':       return jsonResponse(deleteSlide(body.slideId));
+    case 'moveSlide':         return jsonResponse(moveSlide(body.slideId, body.dir));
     case 'listAdmins':        return jsonResponse(listAdmins());
     case 'addAdmin':          return jsonResponse(addAdmin(body.admin));
     case 'updateAdmin':       return jsonResponse(updateAdmin(body.admin));
@@ -359,7 +364,10 @@ function getOrders(status) {
         deliveryCharge: o.deliverycharge,
         total:          o.total,
         status:         (o.status||'Pending').toString().trim(),
-        salesProcess:   (String(o.salesprocess || '').trim().toLowerCase() === 'offline') ? 'Offline' : 'Online'
+        salesProcess:   (String(o.salesprocess || '').trim().toLowerCase() === 'offline') ? 'Offline' : 'Online',
+        paymentMethod:  o.paymentmethod || '',
+        paymentFrom:    fixPhone(o.paymentfrom),
+        trxId:          o.trxid ? String(o.trxid) : ''
       };
     });
   return { orders: orders.reverse() };
@@ -414,6 +422,21 @@ function saveOrder(order) {
   if (order.noDelivery === true) dc = 0;   // কার্টের একাধিক পণ্যে ডেলিভারি চার্জ একবারই
   var total   = sub + dc;
 
+  // পেমেন্ট: ক্যাশ অন ডেলিভারি অথবা সেটিংসে থাকা ব্যাংক/মোবাইল ব্যাংকিং (ট্রানজেকশন আইডি আবশ্যক)
+  var payMethod = 'Cash on Delivery', payFrom = '', trx = '';
+  if (offline) {
+    payMethod = 'Cash';
+  } else if (order.paymentMethod && String(order.paymentMethod) !== 'Cash on Delivery') {
+    var pmFound = null;
+    st.paymentMethods.forEach(function(m) { if (m.name === String(order.paymentMethod)) pmFound = m; });
+    if (!pmFound) return { error: 'পেমেন্ট মাধ্যম সঠিক নয়, পেজ রিফ্রেশ করে আবার চেষ্টা করুন' };
+    trx     = String(order.trxId || '').trim().slice(0, 60);
+    payFrom = String(order.paymentFrom || '').trim().slice(0, 60);
+    if (!trx)     return { error: 'ট্রানজেকশন আইডি (TrxID) দিন' };
+    if (!payFrom) return { error: 'যে নম্বর/অ্যাকাউন্ট থেকে টাকা পাঠিয়েছেন তা দিন' };
+    payMethod = pmFound.name;
+  }
+
   // মোবাইল নম্বর টেক্সট ফরম্যাটে (শুরুর ০ যাতে হারিয়ে না যায়)
   var oLock = LockService.getScriptLock();
   oLock.waitLock(15000);
@@ -437,8 +460,11 @@ function saveOrder(order) {
     'deliverycharge': dc,
     'total':          total,
     'status':         offline ? 'Delivery' : 'New',   // অনলাইন: নতুন অর্ডার → কনফার্মে Pending (বুকিং); শপ: সরাসরি Delivery
-    'salesprocess':   offline ? 'Offline' : 'Online'
-  }, ['phone']);
+    'salesprocess':   offline ? 'Offline' : 'Online',
+    'paymentmethod':  payMethod,
+    'paymentfrom':    payFrom,
+    'trxid':          trx
+  }, ['phone', 'paymentfrom', 'trxid']);
   } finally { oLock.releaseLock(); }
 
   clearProductsCache();
@@ -673,12 +699,14 @@ function getSettings() {
   var sheet = ensureSheet('Settings');
   var rows  = sheet.getDataRange().getValues();
   var out   = { deliveryInside: DEFAULT_SETTINGS.deliveryInside, deliveryOutside: DEFAULT_SETTINGS.deliveryOutside };
-  var areasRaw = null, catsRaw = null, expCatsRaw = null;
+  var areasRaw = null, catsRaw = null, expCatsRaw = null, payRaw = null;
   for (var i = 1; i < rows.length; i++) {
     var k = String(rows[i][0]).trim();
     var v = rows[i][1];
     if (k === 'deliveryAreas') {
       try { var pa = JSON.parse(String(v)); if (Array.isArray(pa)) areasRaw = pa; } catch (e) {}
+    } else if (k === 'paymentMethods') {
+      try { var pm = JSON.parse(String(v)); if (Array.isArray(pm)) payRaw = pm; } catch (e) {}
     } else if (k === 'categories') {
       try { var pc = JSON.parse(String(v)); if (Array.isArray(pc)) catsRaw = pc; } catch (e) {}
     } else if (k === 'expenseCategories') {
@@ -692,10 +720,31 @@ function getSettings() {
   var areas = cleanAreas(areasRaw);
   if (!areas.length) areas = [ { name: 'Inside Feni', charge: out.deliveryInside }, { name: 'Outside Feni', charge: out.deliveryOutside } ];
   out.deliveryAreas = areas;
+  out.paymentMethods = cleanPayMethods(payRaw);
   var cc = cleanNames(catsRaw), ec = cleanNames(expCatsRaw);
   out.categories = cc.length ? cc : DEFAULT_PRODUCT_CATS.slice();
   out.expenseCategories = ec.length ? ec : DEFAULT_EXPENSE_CATS.slice();
   try { CacheService.getScriptCache().put(SETTINGS_CACHE_KEY, JSON.stringify(out), 300); } catch (e) {}
+  return out;
+}
+
+// পেমেন্ট মাধ্যম (ব্যাংক / মোবাইল ব্যাংকিং) পরিষ্কার
+function cleanPayMethods(list) {
+  var seen = {}, out = [];
+  (list || []).forEach(function(m) {
+    var name = String((m && m.name) || '').trim().slice(0, 40);
+    var number = String((m && m.number) || '').trim().slice(0, 60);
+    if (!name || !number) return;
+    var k = name.toLowerCase();
+    if (seen[k] || k === 'cash on delivery') return;
+    seen[k] = true;
+    out.push({
+      type: (m.type === 'bank') ? 'bank' : 'mobile',
+      name: name, number: number,
+      holder: String(m.holder || '').trim().slice(0, 60),
+      note: String(m.note || '').trim().slice(0, 150)
+    });
+  });
   return out;
 }
 
@@ -756,6 +805,7 @@ function saveSettings(s) {
     var lst = cleanNames(s[key]);
     if (lst.length) put(key, JSON.stringify(lst), true);
   });
+  if (Array.isArray(s.paymentMethods)) put('paymentMethods', JSON.stringify(cleanPayMethods(s.paymentMethods)), true);
   if (Array.isArray(s.deliveryAreas)) {
     var ar = cleanAreas(s.deliveryAreas);
     if (!ar.length) return { error: 'কমপক্ষে একটি ডেলিভারি এরিয়া দিন' };
@@ -1046,6 +1096,73 @@ function payAllDue(date, note) {
     }
     if (!count) return { error: 'কোনো Due নেই' };
     return { success: true, count: count, total: total };
+  } finally { lock.releaseLock(); }
+}
+
+/* ======== SLIDES (হোমপেজ স্লাইডের ছবি) ======== */
+
+function readSlides() {
+  var sheet = ensureSheet('Slides');
+  var list = rowsToObjects(sheet.getDataRange().getValues()).map(function(o) {
+    return { slideId: String(o.slideId), image: String(o.image || ''), sort: Number(o.sort) || 0 };
+  }).filter(function(x) { return x.slideId && x.image; });
+  list.sort(function(a, b) { return a.sort - b.sort; });
+  return list;
+}
+
+function getSlides() {
+  return { slides: readSlides() };
+}
+
+function addSlide(image) {
+  image = String(image || '').trim();
+  if (!/^https?:\/\//i.test(image) || image.length > 800) return { error: 'ছবির লিংক সঠিক নয়' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Slides'), headers = getHeaders(sheet);
+    var max = 0; readSlides().forEach(function(x) { if (x.sort > max) max = x.sort; });
+    var id = 'SL-' + new Date().getTime() + '-' + Math.floor(Math.random() * 100000);
+    appendRowText(sheet, headers, { 'slideid': id, 'image': image, 'sort': max + 1, 'createdat': new Date() }, []);
+    return { success: true, slideId: id };
+  } finally { lock.releaseLock(); }
+}
+
+function deleteSlide(slideId) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Slides'), c = colIndex(sheet, 'slideId');
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][c]) === String(slideId)) { sheet.deleteRow(i + 1); return { success: true }; }
+    }
+    return { error: 'স্লাইড পাওয়া যায়নি' };
+  } finally { lock.releaseLock(); }
+}
+
+// সিরিয়াল বদল: পাশের স্লাইডের সাথে sort মান অদলবদল
+function moveSlide(slideId, dir) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = ensureSheet('Slides');
+    var idC = colIndex(sheet, 'slideId'), sC = colIndex(sheet, 'sort');
+    var rows = sheet.getDataRange().getValues();
+    var list = [];
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][idC]) list.push({ row: i + 1, id: String(rows[i][idC]), sort: Number(rows[i][sC]) || 0 });
+    }
+    list.sort(function(a, b) { return a.sort - b.sort; });
+    var k = -1;
+    list.forEach(function(x, n) { if (x.id === String(slideId)) k = n; });
+    if (k < 0) return { error: 'স্লাইড পাওয়া যায়নি' };
+    var j = (dir === 'up') ? k - 1 : k + 1;
+    if (j < 0 || j >= list.length) return { success: true };
+    // সবাইকে ১..N ক্রমে সাজিয়ে দুটি অদলবদল (ডুপ্লিকেট sort মান থাকলেও ঠিক থাকে)
+    var tmp = list[k]; list[k] = list[j]; list[j] = tmp;
+    list.forEach(function(x, n) { sheet.getRange(x.row, sC + 1).setValue(n + 1); });
+    return { success: true };
   } finally { lock.releaseLock(); }
 }
 
