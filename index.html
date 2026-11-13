@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProyojonBD — অনলাইনে অর্ডার করুন</title>
+<meta name="description" content="nirvarbd.com — অনলাইনে সহজে অর্ডার করুন। ক্যাশ অন ডেলিভারি, বিকাশ/নগদ/ব্যাংক পেমেন্ট এবং দ্রুত ডেলিভারি।">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://nirvarbd.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ProyojonBD">
+<meta property="og:title" content="ProyojonBD — অনলাইনে অর্ডার করুন">
+<meta property="og:description" content="nirvarbd.com — অনলাইনে সহজে অর্ডার করুন। ক্যাশ অন ডেলিভারি ও অনলাইন পেমেন্ট।">
+<meta property="og:url" content="https://nirvarbd.com/">
+<meta property="og:locale" content="bn_BD">
+<meta name="theme-color" content="#1A1F36">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"ProyojonBD","alternateName":["nirvarbd.com","nirvarbd"],"url":"https://nirvarbd.com/"}</script>
 <link rel="icon" id="siteFavicon" href="data:,">
 <link rel="apple-touch-icon" id="siteAppleIcon" href="data:,">
 <link rel="preconnect" href="https://script.google.com">
@@ -2205,7 +2216,6 @@ async function loadDeliverySettings(){
     }
   }catch(e){}
 }
-const ADMIN_PIN = "11296"; // ⚠️ এটা বদলে নিন। এটা real security না, শুধু সাধারণ visitor আটকানোর জন্য।
 
 const SAMPLE_PRODUCTS = []; // Demo পণ্য বাদ — শীট থেকেই আসবে
 let PRODUCTS = [];
@@ -2224,20 +2234,34 @@ function showToast(msg){
 }
 function money(n){ return Number(n||0).toLocaleString('en-BD') + ' টাকা'; }
 
+const TOKEN_KEY = 'proyojonbd_admin_token';
+function adminToken(){ return localStorage.getItem(TOKEN_KEY) || ''; }
+function isAdminUnlocked(){ return localStorage.getItem('proyojonbd_admin_unlocked') === 'yes' && !!adminToken(); }
+let _sessionExpiredShown = false;
+function handleUnauthorized(res){
+  if (res && res.error === 'UNAUTHORIZED' && adminToken() && !_sessionExpiredShown){
+    _sessionExpiredShown = true;
+    showToast('সেশন শেষ হয়েছে, আবার লগইন করুন');
+    setTimeout(()=>{ document.getElementById('lockAdminBtn').click(); _sessionExpiredShown = false; }, 300);
+  }
+  return res;
+}
 async function apiGet(params){
-  const res = await fetch(API_URL + '?' + params + '&_t=' + Date.now(), { redirect:'follow', cache:'no-store' });
+  const tk = adminToken();
+  const res = await fetch(API_URL + '?' + params + (tk ? '&token=' + encodeURIComponent(tk) : '') + '&_t=' + Date.now(), { redirect:'follow', cache:'no-store' });
   const text = await res.text();
-  try{ return JSON.parse(text); }
+  try{ return handleUnauthorized(JSON.parse(text)); }
   catch(e){ throw new Error('JSON parse failed: ' + text.slice(0,100)); }
 }
 async function apiPost(payload){
+  const tk = adminToken();
   const res = await fetch(API_URL, {
     method:'POST',
     headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(tk ? Object.assign({}, payload, { token: tk }) : payload)
   });
   const text = await res.text();
-  try{ return JSON.parse(text); }
+  try{ return handleUnauthorized(JSON.parse(text)); }
   catch(e){ throw new Error('সার্ভার থেকে সঠিক উত্তর আসেনি — Apps Script নতুন করে Deploy করুন'); }
 }
 
@@ -2273,7 +2297,7 @@ document.getElementById('footerCredit').addEventListener('click', e=>{
 
 /* ---------- Admin PIN গেট ---------- */
 function checkAdminGate(){
-  if (localStorage.getItem('proyojonbd_admin_unlocked') === 'yes'){
+  if (isAdminUnlocked()){
     showAdminView();
   } else {
     document.getElementById('gateView').style.display = 'block';
@@ -2325,7 +2349,8 @@ function gateFail(msg){
   gateReset();
   document.getElementById('otp0')?.focus();
 }
-function gateOk(who){
+function gateOk(who, token){
+  localStorage.setItem(TOKEN_KEY, token || '');
   localStorage.setItem('proyojonbd_admin_unlocked', 'yes');
   if (who) localStorage.setItem('proyojonbd_admin_name', who); else localStorage.removeItem('proyojonbd_admin_name');
   document.getElementById('gateError').classList.remove('show');
@@ -2335,12 +2360,11 @@ function gateOk(who){
 document.getElementById('gateSubmitBtn').addEventListener('click', async ()=>{
   const val = document.getElementById('gatePinInput').value;
   if (!/^\d{5}$/.test(val)){ gateFail(); return; }
-  if (val === ADMIN_PIN){ gateOk(''); return; }     // মালিকের মাস্টার পাসওয়ার্ড
   if (!API_URL){ gateFail(); return; }
   const btn = document.getElementById('gateSubmitBtn');
   try{
     const res = await withBusy(btn, 'যাচাই হচ্ছে…', ()=> apiPost({ action:'adminLogin', password:val }));
-    if (res.success) gateOk(res.admin.name + (res.admin.designation ? ' (' + res.admin.designation + ')' : ''));
+    if (res.success && res.token) gateOk(res.admin.name + (res.admin.designation ? ' (' + res.admin.designation + ')' : ''), res.token);
     else gateFail(res.error);
   }catch(e){ gateFail('সার্ভারে সংযোগ করা যায়নি'); }
 });
@@ -2403,6 +2427,8 @@ function autoLockAdmin(){
   document.getElementById('lockAdminBtn').click();
 }
 document.getElementById('lockAdminBtn').addEventListener('click', ()=>{
+  { const tk = adminToken(); if (tk && API_URL){ fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify({ action:'adminLogout', token: tk }) }).catch(()=>{}); }
+    localStorage.removeItem(TOKEN_KEY); }
   localStorage.removeItem('proyojonbd_admin_unlocked');
   localStorage.removeItem('proyojonbd_admin_name');
   resetAdminUi();
@@ -6116,7 +6142,7 @@ function recomputeLowStock(){
 function setLowStock(products){ LOW_RAW = products || []; recomputeLowStock(); }
 async function refreshLowStock(){
   const btn = document.getElementById('lowStockBtn');
-  const unlocked = localStorage.getItem('proyojonbd_admin_unlocked') === 'yes';
+  const unlocked = isAdminUnlocked();
   btn.style.display = unlocked ? '' : 'none';   // শুধু অ্যাডমিনের জন্য
   if (!unlocked || !API_URL) return;
   try{ const d = await apiGet('action=stock'); setLowStock(d.products); }catch(e){}

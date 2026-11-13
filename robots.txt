@@ -1,5 +1,4 @@
 User-agent: *
-
 Allow: /
 
-Sitemap: https://amneed96-collab.github.io/proyojonbd/sitemap.xml
+Sitemap: https://nirvarbd.com/sitemap.xml

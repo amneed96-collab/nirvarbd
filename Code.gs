@@ -114,9 +114,25 @@ function buildRow(headers, map) {
 
 /* ======== HTTP HANDLERS ======== */
 
+var PUBLIC_GET  = { products:1, slides:1, settings:1, about:1 };
+var PUBLIC_POST = { order:1, adminLogin:1, listAdminNames:1, sendRecoveryPin:1, verifyRecoveryPin:1 };
+var SESSION_TTL = 21600;   // ৬ ঘণ্টা (CacheService-এর সর্বোচ্চ)
+
+function newSession(name) {
+  var t = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+  CacheService.getScriptCache().put('sess_' + t, JSON.stringify({ name: name || '' }), SESSION_TTL);
+  return t;
+}
+function checkSession(t) {
+  t = String(t || '');
+  if (!/^[a-f0-9]{64}$/.test(t)) return false;
+  return !!CacheService.getScriptCache().get('sess_' + t);
+}
+
 function doGet(e) {
-  // প্রতিটি হ্যান্ডলার নিজেই ensureSheet() কল করে — তাই এখানে সব শীট চেক করা হয় না (দ্রুত রেসপন্সের জন্য)
   var action = e.parameter.action;
+  if (!PUBLIC_GET[action] && !checkSession(e.parameter.token)) return jsonResponse({ error: 'UNAUTHORIZED' });
+  // প্রতিটি হ্যান্ডলার নিজেই ensureSheet() কল করে — তাই এখানে সব শীট চেক করা হয় না (দ্রুত রেসপন্সের জন্য)
   if (action === 'products') return jsonResponse(getProducts());
   if (action === 'slides')   return jsonResponse(getSlides());
   if (action === 'settings') return jsonResponse({ settings: getSettings() });
@@ -142,8 +158,10 @@ function doPost(e) {
 }
 
 function handlePost(body) {
+  if (!PUBLIC_POST[body.action] && !checkSession(body.token)) return jsonResponse({ error: 'UNAUTHORIZED' });
   switch (body.action) {
-    case 'order':             return jsonResponse(saveOrder(body.order));
+    case 'order':             return jsonResponse(saveOrder(body.order, checkSession(body.token)));
+    case 'adminLogout':       CacheService.getScriptCache().remove('sess_' + String(body.token || '')); return jsonResponse({ success: true });
     case 'updateOrderStatus': return jsonResponse(updateOrderStatus(body.orderId, body.status));
     case 'deleteOrder':       return jsonResponse(deleteOrder(body.orderId));
     case 'deleteCancelledOrders': return jsonResponse(deleteCancelledOrders());
@@ -388,8 +406,9 @@ function nextSeqId(sheet, colName, prefix) {
   return prefix + '-' + n;
 }
 
-function saveOrder(order) {
+function saveOrder(order, isAdmin) {
   var offline = !!order && order.salesProcess === 'Offline';   // Sales in Shop — সরাসরি ডেলিভারি সম্পন্ন
+  if (offline && !isAdmin) return { error: 'UNAUTHORIZED' };   // শপ বিক্রি শুধু লগইন করা অ্যাডমিন করতে পারবে
   if (offline && !String(order.customerName || '').trim()) order.customerName = 'Shop Customer';
   if (!order || !order.productName || !order.customerName) return { error: 'তথ্য অসম্পূর্ণ' };
   var sheet   = ensureSheet('Orders');
@@ -407,6 +426,14 @@ function saveOrder(order) {
     if (avail !== null && qty > avail) return { error: 'দুঃখিত, "' + order.productName + '" এর স্টকে মাত্র ' + avail + ' আছে' };
   }
   var unit    = Number(order.unitPrice)      || 0;
+  if (!offline) {
+    // অনলাইন অর্ডারে দাম সবসময় Products শীট থেকে (ক্লায়েন্টের পাঠানো দাম বিশ্বাস করা হয় না)
+    var pf = null, pn = String(order.productName).trim().toLowerCase();
+    getProducts().products.forEach(function(p) { if (String(p.name).trim().toLowerCase() === pn) pf = p; });
+    if (!pf) return { error: 'পণ্য পাওয়া যায়নি, পেজ রিফ্রেশ করে আবার চেষ্টা করুন' };
+    unit = (Number(pf.discount) > 0) ? Number(pf.price) - Number(pf.discount) : Number(pf.price);
+    if (!(unit >= 0)) return { error: 'পণ্যের দাম সঠিক নয়' };
+  }
   var sub     = r2(unit * qty);
   // ডেলিভারি চার্জ সবসময় Settings শীট থেকে (ক্লায়েন্টের পাঠানো মান বিশ্বাস করা হয় না)
   var st      = getSettings();
@@ -1332,6 +1359,13 @@ function adminLogin(identifier, password) {
   var fails = Number(cache.get(key)) || 0;
   if (fails >= 10) return { error: 'অনেকবার ভুল হয়েছে। ১৫ মিনিট পর আবার চেষ্টা করুন' };
 
+  // মালিকের মাস্টার পাসওয়ার্ড: Apps Script → Project Settings → Script properties → MASTER_PIN (কোডে বা সাইটে লেখা থাকে না)
+  var master = String(PropertiesService.getScriptProperties().getProperty('MASTER_PIN') || '').trim();
+  if (master && pw === master) {
+    cache.remove(key);
+    return { success: true, token: newSession('Owner'), admin: { name: '', designation: '' } };
+  }
+
   var sheet = ensureSheet('Admins');
   var rows  = rowsToObjects(sheet.getDataRange().getValues());
   for (var i = 0; i < rows.length; i++) {
@@ -1339,7 +1373,7 @@ function adminLogin(identifier, password) {
     var ok = sp ? (sp === pw) : (o.salt && o.passwordhash && hashPassword(String(o.salt), pw) === String(o.passwordhash));
     if (ok) {
       cache.remove(key);
-      return { success: true, admin: { name: String(o.name || ''), designation: String(o.designation || '') } };
+      return { success: true, token: newSession(String(o.name || '')), admin: { name: String(o.name || ''), designation: String(o.designation || '') } };
     }
   }
   cache.put(key, String(fails + 1), 900);
