@@ -1,5 +1,5 @@
 /**
- * ProyojonBD — Apps Script Backend (v8)
+ * NirvarBD — Apps Script Backend (v8)
  * শীট ও হেডার অটো তৈরি হবে। আগের শীটে নতুন কলাম missing থাকলে অটো যুক্ত হবে।
  */
 
